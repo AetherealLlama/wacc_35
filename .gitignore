@@ -1,9 +1,5 @@
-#ignore generated binary files and auto-generated ANTLR code
-bin
-src/antlr
+# Ignore Gradle project-specific cache directory
+.gradle
 
-#ignore Java class files
-*.class
-
-#ignore other junk files
-*~
+# Ignore Gradle build output directory
+build
