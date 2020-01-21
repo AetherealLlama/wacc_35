@@ -10,6 +10,9 @@ plugins {
 
     // Apply the application plugin to add support for building a CLI application.
     application
+
+    // Apply the antlr plugin to add support for ANTLR4
+    antlr
 }
 
 repositories {
@@ -30,6 +33,9 @@ dependencies {
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+
+    // Use ANTLR4
+    antlr("org.antlr:antlr4:4.7.1")
 }
 
 application {
