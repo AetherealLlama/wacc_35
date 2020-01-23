@@ -42,3 +42,8 @@ application {
     // Define the main class for the application.
     mainClassName = "wacc.AppKt"
 }
+
+tasks.generateGrammarSource {
+    maxHeapSize = "64m"
+    arguments = arguments + listOf("-visitor")
+}

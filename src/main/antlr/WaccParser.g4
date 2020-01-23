@@ -1,0 +1,77 @@
+parser grammar WaccParser;
+
+options {
+    tokenVocab=WaccLexer;
+}
+
+program: BEGIN func* stat END ;
+
+func: type IDENT OPEN_PAREN paramList? CLOSE_PAREN IS stat END ;
+
+paramList: param (COMMA param)* ;
+
+param: type IDENT ;
+
+stat: SKIPKW
+    | type IDENT EQUALS assignRhs
+    | assignLhs EQUALS assignRhs
+    | READ assignLhs
+    | FREE expr
+    | RETURN expr
+    | EXIT expr
+    | PRINT expr
+    | PRINTLN expr
+    | IF expr THEN stat ELSE stat FI
+    | WHILE expr DO stat DONE
+    | BEGIN stat END
+    | stat SEMICOLON stat
+    ;
+
+assignLhs: IDENT
+         | arrayElem
+         | pairElem
+         ;
+
+assignRhs: expr
+         | arrayLiter
+         | NEWPAIR OPEN_PAREN expr COMMA expr CLOSE_PAREN
+         | pairElem
+         | CALL IDENT OPEN_PAREN argList? CLOSE_PAREN
+         ;
+
+argList: expr (COMMA expr)* ;
+
+pairElem: FST expr
+        | SND expr
+        ;
+
+type: BASETYPE
+    | type OPEN_SQUARE_BR CLOSE_SQUARE_BR
+    | pairType
+    ;
+
+// TODO: find a nicer way of getting rid of this left-recursion
+//arrayType: type OPEN_SQUARE_BR CLOSE_SQUARE_BR ;
+
+pairType: PAIR OPEN_PAREN pairElemType COMMA pairElemType CLOSE_PAREN ;
+
+pairElemType: BASETYPE
+            | type OPEN_SQUARE_BR CLOSE_SQUARE_BR
+            | PAIR
+            ;
+
+expr: INTLITER
+    | BOOLLITER
+    | CHARLITER
+    | STRLITER
+    | PAIRLITER
+    | IDENT
+    | arrayElem
+    | UNARYOP expr
+    | expr BINARYOP expr
+    | OPEN_PAREN expr CLOSE_PAREN
+    ;
+
+arrayElem: IDENT (OPEN_SQUARE_BR expr CLOSE_SQUARE_BR)+ ;
+
+arrayLiter: OPEN_SQUARE_BR (expr (COMMA expr)*)? CLOSE_SQUARE_BR ;
