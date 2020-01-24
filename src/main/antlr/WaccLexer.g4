@@ -79,5 +79,5 @@ fragment CHARACTER: ~('\\' | '\'' | '"') | '\\' ESCAPEDCHARACTER ;
 fragment ESCAPEDCHARACTER: '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | '\'' | '\\' ;
 
 // Ignore
-COMMENT: '#' ~[\r?\n] -> skip ;
+COMMENT: '#' ~[\r\n]* -> skip ;
 WS: [ \r\n\t] -> skip ;
