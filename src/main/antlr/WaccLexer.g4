@@ -69,8 +69,6 @@ EQ: '==' ;
 NEQ: '!=' ;
 LAND: '&&' ;
 LOR: '||' ;
-UNARYOP: BANG | MINUS | LEN | ORD | CHR ;
-BINARYOP: MUL | DIV | MOD | PLUS | MINUS | GT | GTE | LT | LTE | EQ | NEQ | LAND | LOR ;
 
 // Identifiers
 fragment DIGIT: [0-9] ;

@@ -4,7 +4,7 @@ options {
     tokenVocab=WaccLexer;
 }
 
-program: BEGIN func* stat END ;
+program: BEGIN func* stat END EOF ;
 
 func: type IDENT OPEN_PAREN paramList? CLOSE_PAREN IS stat END ;
 
@@ -67,11 +67,15 @@ expr: INTLITER
     | PAIRLITER
     | IDENT
     | arrayElem
-    | UNARYOP expr
-    | expr BINARYOP expr
+    | unaryOp expr
+    | expr binaryOp expr
     | OPEN_PAREN expr CLOSE_PAREN
     ;
 
 arrayElem: IDENT (OPEN_SQUARE_BR expr CLOSE_SQUARE_BR)+ ;
 
 arrayLiter: OPEN_SQUARE_BR (expr (COMMA expr)*)? CLOSE_SQUARE_BR ;
+
+unaryOp: BANG | MINUS | LEN | ORD | CHR ;
+
+binaryOp: MUL | DIV | MOD | PLUS | MINUS | GT | GTE | LT | LTE | EQ | NEQ | LAND | LOR ;
