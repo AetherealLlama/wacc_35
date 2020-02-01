@@ -7,11 +7,12 @@ plugins {
 
     // Apply the antlr plugin to add support for ANTLR4
     antlr
+
+    // Apply Shadow plugin for fat jar creation
+    id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
 repositories {
-    // Use jcenter for resolving dependencies.
-    // You can declare any Maven/Ivy/file repository here.
     jcenter()
     mavenCentral()
     maven(url = "https://kotlin.bintray.com/kotlin-dev")
@@ -45,7 +46,19 @@ application {
     mainClassName = "wacc.AppKt"
 }
 
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "wacc.AppKt"
+    }
+}
+
 tasks.generateGrammarSource {
     maxHeapSize = "64m"
+    // Make ANTLR generate visitor pattern files
     arguments = arguments + listOf("-visitor")
+}
+
+// Make sure we generate ANTLR sources before trying to compile kt files
+tasks.compileKotlin {
+    dependsOn("generateGrammarSource")
 }
