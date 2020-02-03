@@ -13,8 +13,7 @@ sealed class Stat {
     data class IfThenElse(val expr: Expr, val branch1: Stat, val branch2: Stat): Stat()
     data class WhileDo(val expr: Expr, val stat: Stat) : Stat()
     data class Begin(val stat: Stat) : Stat()
-    // TODO: change this name
-    data class Semicolon(val stat1: Stat, val stat2: Stat) : Stat()
+    data class Compose(val stat1: Stat, val stat2: Stat) : Stat()
 }
 
 sealed class AssignLhs {

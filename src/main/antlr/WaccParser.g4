@@ -45,19 +45,14 @@ pairElem: FST expr
         | SND expr
         ;
 
-type: BASETYPE
-    | type OPEN_SQUARE_BR CLOSE_SQUARE_BR
-    | pairType
+type: BASETYPE                                                     # BaseType
+    | type OPEN_SQUARE_BR CLOSE_SQUARE_BR                          # ArrayType
+    | PAIR OPEN_PAREN pairElemType COMMA pairElemType CLOSE_PAREN  # PairType
     ;
 
-// TODO: find a nicer way of getting rid of this left-recursion
-//arrayType: type OPEN_SQUARE_BR CLOSE_SQUARE_BR ;
-
-pairType: PAIR OPEN_PAREN pairElemType COMMA pairElemType CLOSE_PAREN ;
-
-pairElemType: BASETYPE
-            | type OPEN_SQUARE_BR CLOSE_SQUARE_BR
-            | PAIR
+pairElemType: BASETYPE                            # BasePairElemType
+            | type OPEN_SQUARE_BR CLOSE_SQUARE_BR # ArrayPairElemType
+            | PAIR                                # PairPairElemType
             ;
 
 expr: INTLITER

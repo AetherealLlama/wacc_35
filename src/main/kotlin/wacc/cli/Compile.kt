@@ -5,6 +5,7 @@ import WaccParser
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import picocli.CommandLine.*
+import wacc.VERSION
 import wacc.utils.Logging
 import wacc.utils.logger
 import java.io.File
@@ -12,7 +13,7 @@ import java.io.FileInputStream
 import java.util.concurrent.Callable
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
-        mixinStandardHelpOptions = true, version = [wacc.VERSION])
+        mixinStandardHelpOptions = true, version = [VERSION])
 class Compile : Callable<Int>, Logging {
     private val logger = logger()
 
@@ -30,7 +31,8 @@ class Compile : Callable<Int>, Logging {
         val tokens = CommonTokenStream(lexer)
         val parser = WaccParser(tokens)
         val tree = parser.program()
-        println(tree.toStringTree(parser))
+        val program = ProgramVisitor()
+        program.visit(tree)
         return 0
     }
 }
