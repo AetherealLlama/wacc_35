@@ -38,7 +38,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 
     // Use ANTLR4
-    antlr("org.antlr:antlr4:4.7.1")
+    antlr("org.antlr:antlr4:4.8")
 }
 
 application {
