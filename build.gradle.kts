@@ -26,7 +26,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
     implementation("info.picocli:picocli:4.1.4")
-    implementation("commons-codec:commons-codec:1.14")
+    implementation("commons-io:commons-io:2.6")
     implementation("ch.qos.logback:logback-core:1.2.3")
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.3.61")
@@ -38,7 +38,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 
     // Use ANTLR4
-    antlr("org.antlr:antlr4:4.7.1")
+    antlr("org.antlr:antlr4:4.8")
 }
 
 application {
