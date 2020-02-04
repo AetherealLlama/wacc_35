@@ -1,11 +1,8 @@
-package wacc.ast.semantics.errors
+package wacc.ast.semantics
 
 import wacc.ast.BinaryOperator
 import wacc.ast.Type
 import wacc.ast.UnaryOperator
-import wacc.ast.semantics.argType
-import wacc.ast.semantics.argTypes
-import wacc.ast.semantics.returnType
 
 abstract class SemanticError(private val errName: String? = null) {
     override fun toString(): String {
