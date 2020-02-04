@@ -17,8 +17,8 @@ class FunctionVisitor : WaccParserBaseVisitor<Func>() {
     }
 }
 
-private fun getParamsFromParamListContext(ctx: WaccParser.ParamListContext): Array<Param> {
-    return ctx.param().map(::getParamFromParamContext).toTypedArray()
+private fun getParamsFromParamListContext(ctx: WaccParser.ParamListContext?): Array<Param> {
+    return ctx?.param()?.map(::getParamFromParamContext)?.toTypedArray() ?: emptyArray()
 }
 
 private fun getParamFromParamContext(ctx: WaccParser.ParamContext): Param {
