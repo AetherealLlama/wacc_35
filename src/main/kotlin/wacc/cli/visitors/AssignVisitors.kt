@@ -53,7 +53,7 @@ class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>() {
 
     override fun visitAssignRhsCall(ctx: WaccParser.AssignRhsCallContext?): AssignRhs {
         val name = ctx?.IDENT()?.text!!
-        val args = ctx.argList()?.expr()?.map(exprVisitor::visit)?.toTypedArray()!!
+        val args = ctx.argList()?.expr()?.map(exprVisitor::visit)?.toTypedArray() ?: emptyArray()
         return AssignRhs.Call(name, args)
     }
 }
