@@ -3,8 +3,8 @@ package wacc.ast.semantics
 import wacc.ast.*
 
 
-typealias Scope = List<Pair<String, Type>>
-typealias Errors = List<SemanticError>
+internal typealias Scope = List<Pair<String, Type>>
+internal typealias Errors = List<SemanticError>
 
 
 fun Program.checkSemantics(): Errors =
@@ -52,7 +52,7 @@ private fun Stat.checkSemantics(
     }
     is Stat.Free -> expr.checkSemantics(funcs, scopes).let { (type, errors) ->
         var typeError = emptyList<SemanticError>()
-        if (listOf(Type.ArrayType(Type.AnyType), Type.PairType(Type.AnyType, Type.AnyType)).none { type matches it })
+        if (listOf(Type.ArrayType(Type.AnyType), ANY_PAIR).none { type matches it })
             typeError = listOf(FreeTypeMismatch(type))
         currentScope to errors + typeError
     }
@@ -84,7 +84,7 @@ private fun Expr.checkSemantics(funcs: Array<Func>, scopes: List<Scope>): Pair<T
     is Expr.Literal.BoolLiteral -> Type.BaseType.TypeBool to emptyList()
     is Expr.Literal.CharLiteral -> Type.BaseType.TypeChar to emptyList()
     is Expr.Literal.StringLiteral -> Type.BaseType.TypeString to emptyList()
-    is Expr.Literal.PairLiteral -> Type.PairType(Type.AnyType, Type.AnyType) to emptyList()
+    is Expr.Literal.PairLiteral -> ANY_PAIR to emptyList()
     is Expr.Ident -> checkIdent(name, scopes)
     is Expr.ArrayElem -> checkArrayElem(name, exprs, funcs, scopes)
     is Expr.UnaryOp -> expr.checkSemantics(funcs, scopes).let { (type, errors) ->
@@ -139,6 +139,8 @@ private fun AssignRhs.checkSemantics(funcs: Array<Func>, scopes: List<Scope>): P
             ?: Type.AnyType to listOf(IdentNotFoundError(name))
 }
 
+// <editor-fold desc="Common type checkers, to keep things dry">
+
 private fun Expr.checkBool(funcs: Array<Func>, scopes: List<Scope>): Errors {
     val (exprType, exprErrors) = checkSemantics(funcs, scopes)
     return if (exprType.matches(Type.BaseType.TypeBool))
@@ -149,13 +151,13 @@ private fun Expr.checkBool(funcs: Array<Func>, scopes: List<Scope>): Errors {
 
 private fun Expr.checkPairElem(funcs: Array<Func>, scopes: List<Scope>): (PairAccessor) -> Pair<Type, Errors> {
     val (exprType, exprErrors) = checkSemantics(funcs, scopes)
-    return if (exprType matches Type.PairType(Type.AnyType, Type.AnyType))
+    return if (exprType matches ANY_PAIR)
         { accessor -> when (accessor) {
             PairAccessor.FST -> (exprType as Type.PairType).type1
             PairAccessor.SND -> (exprType as Type.PairType).type2
         }.let { type -> type as Type to exprErrors } }
     else
-        { _ -> Type.AnyType to exprErrors + TypeMismatch(Type.PairType(Type.AnyType, Type.AnyType), exprType) }
+        { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType) }
 }
 
 private fun checkArrayElem(
@@ -171,76 +173,4 @@ private fun checkIdent(name: String, scopes: List<Scope>): Pair<Type, Errors> =
     scopes.flatten().firstOrNull { it.first == name }?.let { it.second to emptyList<SemanticError>() }
             ?: Type.AnyType to listOf(IdentNotFoundError(name))
 
-private fun Type.checkArrayType(depth: Int): Pair<Type, Errors> {
-    if (depth == 0)
-        return this to emptyList()
-
-    if (this is Type.ArrayType)
-        return this.type.checkArrayType(depth-1)
-
-    var expectedType: Type = Type.AnyType
-    (1..depth).forEach { expectedType = Type.ArrayType(expectedType) }
-    return Type.AnyType to listOf(TypeMismatch(expectedType, this))
-}
-
-private val unaryOpTypes: Map<UnaryOperator, Pair<Type, Type>> = mapOf(
-        UnaryOperator.BANG  to (Type.BaseType.TypeBool to Type.BaseType.TypeBool),
-        UnaryOperator.MINUS to (Type.BaseType.TypeInt to Type.BaseType.TypeInt),
-        UnaryOperator.LEN   to (Type.ArrayType(Type.AnyType) to Type.BaseType.TypeInt),
-        UnaryOperator.ORD   to (Type.BaseType.TypeChar to Type.BaseType.TypeInt),
-        UnaryOperator.CHR   to (Type.BaseType.TypeInt  to Type.BaseType.TypeChar)
-)
-
-infix fun Type.matches(other: Type): Boolean {
-    if (this is Type.AnyType || other is Type.AnyType) return true
-    if (this is Type.ArrayType && other is Type.ArrayType) return this.type matches other.type
-    if (this is Type.PairType && other is Type.PairType) {
-        return (this.type1.normalType matches other.type1.normalType)
-                && (this.type2.normalType matches other.type2.normalType)
-    }
-    return this.javaClass == other.javaClass
-}
-
-private val Type.PairElemType.normalType: Type
-    get() = if (this is Type.PairPairElem) Type.PairType(Type.AnyType, Type.AnyType) else this as Type
-
-val UnaryOperator.argType: Type
-    get() = unaryOpTypes.getValue(this).first
-
-private val UnaryOperator.returnType: Type
-    get() = unaryOpTypes.getValue(this).second
-
-val BinaryOperator.argTypes: List<Type>
-    get() = when(this) {
-        BinaryOperator.MUL,
-        BinaryOperator.DIV,
-        BinaryOperator.MOD,
-        BinaryOperator.ADD,
-        BinaryOperator.SUB -> listOf(Type.BaseType.TypeInt)
-        BinaryOperator.GT,
-        BinaryOperator.GTE,
-        BinaryOperator.LT,
-        BinaryOperator.LTE -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeChar)
-        BinaryOperator.EQ,
-        BinaryOperator.NEQ -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeBool, Type.BaseType.TypeChar,
-                Type.ArrayType(Type.AnyType), Type.PairType(Type.AnyType, Type.AnyType))
-        BinaryOperator.LAND,
-        BinaryOperator.LOR -> listOf(Type.BaseType.TypeBool)
-    }
-
-val BinaryOperator.returnType: Type
-    get() = when(this) {
-        BinaryOperator.MUL,
-        BinaryOperator.DIV,
-        BinaryOperator.MOD,
-        BinaryOperator.ADD,
-        BinaryOperator.SUB -> Type.BaseType.TypeInt
-        BinaryOperator.GT,
-        BinaryOperator.GTE,
-        BinaryOperator.LT,
-        BinaryOperator.LTE,
-        BinaryOperator.EQ,
-        BinaryOperator.NEQ,
-        BinaryOperator.LAND,
-        BinaryOperator.LOR -> Type.BaseType.TypeBool
-    }
+// </editor-fold>
