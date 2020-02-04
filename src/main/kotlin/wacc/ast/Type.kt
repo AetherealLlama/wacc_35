@@ -17,4 +17,7 @@ sealed class Type {
     interface PairElemType
 
     object PairPairElem : PairElemType
+
+    // This is only used to be able to reason about empty arrays during semantics checking.
+    object AnyType : Type(), PairElemType
 }
