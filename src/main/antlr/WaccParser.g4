@@ -53,11 +53,7 @@ pairElemType: BASETYPE                            # BasePairElemType
             | PAIR                                # PairPairElemType
             ;
 
-expr: lit=INTLITER                                                                                 # Literal
-    | lit=BOOLLITER                                                                                # Literal
-    | lit=CHARLITER                                                                                # Literal
-    | lit=STRLITER                                                                                 # Literal
-    | lit=PAIRLITER                                                                                # Literal
+expr: lit=(INTLITER | BOOLLITER | CHARLITER | STRLITER | PAIRLITER)                                # Literal
     | IDENT                                                                                        # IdExpr
     | arrayElem                                                                                    # ArrayElemExpr
     | op=(BANG | MINUS | LEN | ORD | CHR) expr                                                     # UnaryOpExpr
