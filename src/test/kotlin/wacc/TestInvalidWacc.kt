@@ -1,5 +1,6 @@
 package wacc
 
+import org.apache.commons.io.FilenameUtils
 import org.junit.Test
 import picocli.CommandLine
 import wacc.cli.Compile
@@ -16,8 +17,13 @@ class TestInvalidWacc {
     private val semanticErr = Paths.get("wacc_examples/invalid/semanticErr")
     private val syntacticErr = Paths.get("wacc_examples/invalid/syntaxErr")
 
-    private val semanticPrograms = Files.walk(semanticErr).filter { Files.isRegularFile(it) }
-    private val syntacticPrograms = Files.walk(syntacticErr).filter { Files.isRegularFile(it) }
+    private val semanticPrograms = Files.walk(semanticErr)
+            .filter { Files.isRegularFile(it) }
+            .filter { FilenameUtils.getExtension(it.toString()) == "wacc" }
+
+    private val syntacticPrograms = Files.walk(syntacticErr)
+            .filter { Files.isRegularFile(it) }
+            .filter { FilenameUtils.getExtension(it.toString()) == "wacc" }
 
     @Test
     fun testSemanticInvalid() {
