@@ -53,22 +53,18 @@ pairElemType: BASETYPE                            # BasePairElemType
             | PAIR                                # PairPairElemType
             ;
 
-expr: INTLITER
-    | BOOLLITER
-    | CHARLITER
-    | STRLITER
-    | PAIRLITER
-    | IDENT
-    | arrayElem
-    | unaryOp expr
-    | expr binaryOp expr
-    | OPEN_PAREN expr CLOSE_PAREN
+expr: lit=INTLITER                                                                                 # Literal
+    | lit=BOOLLITER                                                                                # Literal
+    | lit=CHARLITER                                                                                # Literal
+    | lit=STRLITER                                                                                 # Literal
+    | lit=PAIRLITER                                                                                # Literal
+    | IDENT                                                                                        # IdExpr
+    | arrayElem                                                                                    # ArrayElemExpr
+    | op=(BANG | MINUS | LEN | ORD | CHR) expr                                                     # UnaryOpExpr
+    | expr op=(MUL | DIV | MOD | PLUS | MINUS | GT | GTE | LT | LTE | EQ | NEQ | LAND | LOR) expr  # BinaryOpExpr
+    | OPEN_PAREN expr CLOSE_PAREN                                                                  # ParensExpr
     ;
 
 arrayElem: IDENT (OPEN_SQUARE_BR expr CLOSE_SQUARE_BR)+ ;
 
 arrayLiter: OPEN_SQUARE_BR (expr (COMMA expr)*)? CLOSE_SQUARE_BR ;
-
-unaryOp: BANG | MINUS | LEN | ORD | CHR ;
-
-binaryOp: MUL | DIV | MOD | PLUS | MINUS | GT | GTE | LT | LTE | EQ | NEQ | LAND | LOR ;

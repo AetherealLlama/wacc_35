@@ -5,7 +5,6 @@ import wacc.ast.Stat
 
 class StatVisitor : WaccParserBaseVisitor<Stat>() {
     private val exprVisitor = ExprVisitor()
-    private val statVisitor = StatVisitor()
     private val typeVisitor = TypeVisitor()
     private val assignRhsVisitor = AssignRhsVisitor()
     private val assignLhsVisitor = AssignLhsVisitor()
@@ -57,25 +56,25 @@ class StatVisitor : WaccParserBaseVisitor<Stat>() {
 
     override fun visitIfThenElse(ctx: WaccParser.IfThenElseContext?): Stat {
         val expr = exprVisitor.visit(ctx?.expr())
-        val stat1 = statVisitor.visit(ctx?.stat(0))
-        val stat2 = statVisitor.visit(ctx?.stat(1))
+        val stat1 = visit(ctx?.stat(0))
+        val stat2 = visit(ctx?.stat(1))
         return Stat.IfThenElse(expr, stat1, stat2)
     }
 
     override fun visitWhileDo(ctx: WaccParser.WhileDoContext?): Stat {
         val expr = exprVisitor.visit(ctx?.expr())
-        val stat = statVisitor.visit(ctx?.stat())
+        val stat = visit(ctx?.stat())
         return Stat.WhileDo(expr, stat)
     }
 
     override fun visitBegin(ctx: WaccParser.BeginContext?): Stat {
-        val stat = statVisitor.visit(ctx?.stat())
+        val stat = visit(ctx?.stat())
         return Stat.Begin(stat)
     }
 
     override fun visitCompose(ctx: WaccParser.ComposeContext?): Stat {
-        val stat1 = statVisitor.visit(ctx?.stat(0))
-        val stat2 = statVisitor.visit(ctx?.stat(1))
+        val stat1 = visit(ctx?.stat(0))
+        val stat2 = visit(ctx?.stat(1))
         return Stat.Compose(stat1, stat2)
     }
 }

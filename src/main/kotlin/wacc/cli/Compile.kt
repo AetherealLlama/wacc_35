@@ -32,8 +32,8 @@ class Compile : Callable<Int>, Logging {
         val tokens = CommonTokenStream(lexer)
         val parser = WaccParser(tokens)
         val tree = parser.program()
-        val program = ProgramVisitor()
-        program.visit(tree)
+        val programVisitor = ProgramVisitor()
+        val program = programVisitor.visit(tree)
         return 0
     }
 }

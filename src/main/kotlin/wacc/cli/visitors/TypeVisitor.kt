@@ -26,24 +26,25 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
         val type2 = pairElemTypeVisitor.visit(ctx?.pairElemType(1))
         return Type.PairType(type1, type2)
     }
-}
 
-class PairElemTypeVisitor : WaccParserBaseVisitor<Type.PairElemType>() {
-    private val typeVisitor = TypeVisitor()
+    inner class PairElemTypeVisitor : WaccParserBaseVisitor<Type.PairElemType>() {
+        // Bit of an ugly hack to avoid recursive dependencies
+        private val typeVisitor: TypeVisitor = this@TypeVisitor
 
-    override fun visitBasePairElemType(ctx: WaccParser.BasePairElemTypeContext?): Type.PairElemType {
-        // TODO: find a way to remove code duplication here
-        return when (ctx?.BASETYPE()?.symbol?.type) {
-            WaccLexer.INT -> Type.BaseType.TypeInt
-            WaccLexer.BOOL -> Type.BaseType.TypeBool
-            WaccLexer.CHAR -> Type.BaseType.TypeChar
-            WaccLexer.STRING -> Type.BaseType.TypeString
-            else -> Type.BaseType.TypeInt
+        override fun visitBasePairElemType(ctx: WaccParser.BasePairElemTypeContext?): Type.PairElemType {
+            // TODO: find a way to remove code duplication here
+            return when (ctx?.BASETYPE()?.symbol?.type) {
+                WaccLexer.INT -> Type.BaseType.TypeInt
+                WaccLexer.BOOL -> Type.BaseType.TypeBool
+                WaccLexer.CHAR -> Type.BaseType.TypeChar
+                WaccLexer.STRING -> Type.BaseType.TypeString
+                else -> Type.BaseType.TypeInt
+            }
         }
+
+        override fun visitArrayPairElemType(ctx: WaccParser.ArrayPairElemTypeContext?): Type.PairElemType =
+                Type.ArrayType(typeVisitor.visit(ctx?.type()))
+
+        override fun visitPairPairElemType(ctx: WaccParser.PairPairElemTypeContext?): Type.PairElemType = Type.PairPairElem
     }
-
-    override fun visitArrayPairElemType(ctx: WaccParser.ArrayPairElemTypeContext?): Type.PairElemType =
-            Type.ArrayType(typeVisitor.visit(ctx?.type()))
-
-    override fun visitPairPairElemType(ctx: WaccParser.PairPairElemTypeContext?): Type.PairElemType = Type.PairPairElem
 }
