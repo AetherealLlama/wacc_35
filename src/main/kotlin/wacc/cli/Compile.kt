@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import picocli.CommandLine.*
 import wacc.VERSION
+import wacc.cli.visitors.ProgramVisitor
 import wacc.utils.Logging
 import wacc.utils.logger
 import java.io.File

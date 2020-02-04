@@ -1,4 +1,4 @@
-package wacc.cli
+package wacc.cli.visitors
 
 import WaccParserBaseVisitor
 import wacc.ast.Func

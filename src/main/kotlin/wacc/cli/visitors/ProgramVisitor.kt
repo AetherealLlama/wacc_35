@@ -1,8 +1,7 @@
-package wacc.cli
+package wacc.cli.visitors
 
 import WaccParser
 import WaccParserBaseVisitor
-import wacc.ast.Func
 import wacc.ast.Program
 
 class ProgramVisitor : WaccParserBaseVisitor<Program>() {
