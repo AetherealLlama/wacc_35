@@ -26,5 +26,4 @@ class FunctionVisitor : WaccParserBaseVisitor<Func>() {
         val name = ctx.IDENT().text
         return Param(type, name)
     }
-
 }
