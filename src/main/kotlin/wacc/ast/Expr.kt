@@ -6,7 +6,7 @@ sealed class Expr {
         data class BoolLiteral(val value: Boolean) : Literal()
         data class CharLiteral(val value: Char) : Literal()
         data class StringLiteral(val value: String) : Literal()
-        object PairLiteral : Expr()
+        object PairLiteral : Literal()
     }
 
     data class Ident(val name: String) : Expr()

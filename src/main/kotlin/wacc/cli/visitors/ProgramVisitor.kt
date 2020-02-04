@@ -11,7 +11,6 @@ class ProgramVisitor : WaccParserBaseVisitor<Program>() {
     override fun visitProgram(ctx: WaccParser.ProgramContext?): Program {
         val funcs = ctx?.func()?.map(functionVisitor::visit)?.toTypedArray()!!
         val stat = statVisitor.visit(ctx.stat())
-
         return Program(funcs, stat)
     }
 }

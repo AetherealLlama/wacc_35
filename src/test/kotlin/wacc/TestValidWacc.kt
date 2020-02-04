@@ -1,5 +1,6 @@
 package wacc
 
+import org.apache.commons.io.FilenameUtils
 import org.junit.Test
 import picocli.CommandLine
 import wacc.cli.Compile
@@ -14,7 +15,9 @@ class TestValidWacc {
     private val expectedCode = 0
     private val path = Paths.get("wacc_examples/valid")
 
-    private val programs = Files.walk(path).filter { Files.isRegularFile(it) }
+    private val programs = Files.walk(path)
+            .filter { Files.isRegularFile(it) }
+            .filter { FilenameUtils.getExtension(it.toString()) == "wacc" }
 
     @Test
     fun testValid() {
