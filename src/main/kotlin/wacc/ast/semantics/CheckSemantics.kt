@@ -16,7 +16,7 @@ private fun Func.checkSemantics(funcs: Array<Func>): Errors {
     while (lastStat is Stat.Compose)
         lastStat = lastStat.stat2
     if (lastStat !is Stat.Exit && lastStat !is Stat.Compose)
-        lastStatementError = listOf(FunctionEndError(name))
+        lastStatementError = listOf(FunctionEndError(name, pos))
     return stat.checkSemantics(funcs, currentScope = params.map { it.name to it.type }).second + lastStatementError
 }
 
@@ -30,9 +30,9 @@ private fun Stat.checkSemantics(
         val (rhsType, rhsErrors) = rhs.checkSemantics(funcs, listOf(currentScope) + scopes)
         var typeError = emptyList<SemanticError>()
         if (!(rhsType matches type))
-            typeError = listOf(TypeMismatch(type, rhsType))
+            typeError = listOf(TypeMismatch(type, rhsType, pos))
         if (name in scopes.flatten().map { it.first })
-            currentScope to rhsErrors + typeError + listOf(DuplicateDeclarationError(name))
+            currentScope to rhsErrors + typeError + listOf(DuplicateDeclarationError(name, pos))
         else
             (currentScope + (name to type)) to rhsErrors + typeError
     }
@@ -41,19 +41,19 @@ private fun Stat.checkSemantics(
         val (rhsType, rhsErrors) = rhs.checkSemantics(funcs, listOf(currentScope) + scopes)
         var typeError = emptyList<SemanticError>()
         if (!(lhsType matches rhsType))
-            typeError = listOf(TypeMismatch(lhsType, rhsType))
+            typeError = listOf(TypeMismatch(lhsType, rhsType, pos))
         currentScope to lhsErrors + rhsErrors + typeError
     }
     is Stat.Read -> lhs.checkSemantics(funcs, listOf(currentScope) + scopes).let { (type, errors) ->
         var typeError = emptyList<SemanticError>()
         if (listOf(Type.BaseType.TypeInt, Type.BaseType.TypeChar).none { type matches it })
-            typeError = listOf(ReadTypeMismatch(type))
+            typeError = listOf(ReadTypeMismatch(type, pos))
         currentScope to errors + typeError
     }
     is Stat.Free -> expr.checkSemantics(funcs, scopes).let { (type, errors) ->
         var typeError = emptyList<SemanticError>()
         if (listOf(Type.ArrayType(Type.AnyType), ANY_PAIR).none { type matches it })
-            typeError = listOf(FreeTypeMismatch(type))
+            typeError = listOf(FreeTypeMismatch(type, pos))
         currentScope to errors + typeError
     }
     is Stat.Return,
@@ -85,11 +85,11 @@ private fun Expr.checkSemantics(funcs: Array<Func>, scopes: List<Scope>): Pair<T
     is Expr.Literal.CharLiteral -> Type.BaseType.TypeChar to emptyList()
     is Expr.Literal.StringLiteral -> Type.BaseType.TypeString to emptyList()
     is Expr.Literal.PairLiteral -> ANY_PAIR to emptyList()
-    is Expr.Ident -> checkIdent(name, scopes)
-    is Expr.ArrayElem -> checkArrayElem(name, exprs, funcs, scopes)
+    is Expr.Ident -> checkIdent(name, scopes, pos)
+    is Expr.ArrayElem -> checkArrayElem(name, exprs, funcs, scopes, pos)
     is Expr.UnaryOp -> expr.checkSemantics(funcs, scopes).let { (type, errors) ->
         var argTypeError = emptyList<SemanticError>()
-        if (!(type matches operator.argType)) argTypeError = listOf(UnaryOpInvalidType(type, operator))
+        if (!(type matches operator.argType)) argTypeError = listOf(UnaryOpInvalidType(type, operator, pos))
         operator.returnType to errors + argTypeError
     }
     is Expr.BinaryOp -> {
@@ -97,16 +97,16 @@ private fun Expr.checkSemantics(funcs: Array<Func>, scopes: List<Scope>): Pair<T
         val (arg2Type, arg2Errors) = expr2.checkSemantics(funcs, scopes)
         val errors = mutableListOf<SemanticError>().apply { addAll(arg1Errors); addAll(arg2Errors) }
         // Args must match possible function's accepted types
-        if (operator.argTypes.none { arg1Type matches it }) errors += BinaryOpInvalidType(arg1Type, operator)
+        if (operator.argTypes.none { arg1Type matches it }) errors += BinaryOpInvalidType(arg1Type, operator, pos)
         // Args must match eachother
-        if (!(arg1Type matches arg2Type)) errors += BinaryArgsMismatch(arg1Type, arg2Type, operator)
+        if (!(arg1Type matches arg2Type)) errors += BinaryArgsMismatch(arg1Type, arg2Type, operator, pos)
         operator.returnType to errors
     }
 }
 
 private fun AssignLhs.checkSemantics(funcs: Array<Func>, scopes: List<Scope>): Pair<Type, Errors> = when(this) {
-    is AssignLhs.Variable -> checkIdent(name, scopes)
-    is AssignLhs.ArrayElem -> checkArrayElem(Expr.Ident(name), exprs, funcs, scopes)
+    is AssignLhs.Variable -> checkIdent(name, scopes, pos)
+    is AssignLhs.ArrayElem -> checkArrayElem(Expr.Ident(pos, name), exprs, funcs, scopes, pos)
     is AssignLhs.PairElem -> expr.checkPairElem(funcs, scopes)(accessor)
 }
 
@@ -126,17 +126,17 @@ private fun AssignRhs.checkSemantics(funcs: Array<Func>, scopes: List<Scope>): P
                 if (fstRawType is Type.PairElemType)
                     (fstRawType as Type.PairElemType) to emptyList<SemanticError>()
                 else
-                    Type.AnyType to listOf(InvalidPairElemType(fstRawType))
+                    Type.AnyType to listOf(InvalidPairElemType(fstRawType, pos))
         val (sndType, sndTypeError) =
                 if (sndRawType is Type.PairElemType)
                     (sndRawType as Type.PairElemType) to emptyList<SemanticError>()
                 else
-                    Type.AnyType to listOf(InvalidPairElemType(sndRawType))
+                    Type.AnyType to listOf(InvalidPairElemType(sndRawType, pos))
         Type.PairType(fstType, sndType) to listOf(fstErrors, sndErrors, fstTypeError, sndTypeError).flatten()
     }
     is AssignRhs.PairElem -> expr.checkPairElem(funcs, scopes)(accessor)
     is AssignRhs.Call -> funcs.find { it.name == name }?.let { it.type to emptyList<SemanticError>() }
-            ?: Type.AnyType to listOf(IdentNotFoundError(name))
+            ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
 }
 
 // <editor-fold desc="Common type checkers, to keep things dry">
@@ -146,7 +146,7 @@ private fun Expr.checkBool(funcs: Array<Func>, scopes: List<Scope>): Errors {
     return if (exprType.matches(Type.BaseType.TypeBool))
         exprErrors
     else
-        exprErrors + TypeMismatch(Type.BaseType.TypeBool, exprType)
+        exprErrors + TypeMismatch(Type.BaseType.TypeBool, exprType, pos)
 }
 
 private fun Expr.checkPairElem(funcs: Array<Func>, scopes: List<Scope>): (PairAccessor) -> Pair<Type, Errors> {
@@ -157,20 +157,20 @@ private fun Expr.checkPairElem(funcs: Array<Func>, scopes: List<Scope>): (PairAc
             PairAccessor.SND -> (exprType as Type.PairType).type2
         }.let { type -> type as Type to exprErrors } }
     else
-        { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType) }
+        { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
 }
 
 private fun checkArrayElem(
-        name: Expr.Ident, exprs: Array<Expr>, funcs: Array<Func>, scopes: List<Scope>
+        name: Expr.Ident, exprs: Array<Expr>, funcs: Array<Func>, scopes: List<Scope>, pos: FilePos
 ): Pair<Type, Errors> {
     val (arrayType, arrayErrors) = name.checkSemantics(funcs, scopes)
     val exprErrors = exprs.map { it.checkSemantics(funcs, scopes) }.flatMap { it.second }
-    val (type, typeError) = arrayType.checkArrayType(exprs.size)
+    val (type, typeError) = arrayType.checkArrayType(exprs.size, pos)
     return type to arrayErrors + exprErrors + typeError
 }
 
-private fun checkIdent(name: String, scopes: List<Scope>): Pair<Type, Errors> =
+private fun checkIdent(name: String, scopes: List<Scope>, pos: FilePos): Pair<Type, Errors> =
     scopes.flatten().firstOrNull { it.first == name }?.let { it.second to emptyList<SemanticError>() }
-            ?: Type.AnyType to listOf(IdentNotFoundError(name))
+            ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
 
 // </editor-fold>

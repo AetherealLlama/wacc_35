@@ -1,36 +1,35 @@
 package wacc.cli.visitors
 
 import WaccParserBaseVisitor
-import wacc.ast.BinaryOperator
-import wacc.ast.Expr
-import wacc.ast.UnaryOperator
+import wacc.ast.*
+import java.lang.IllegalStateException
 
 class ExprVisitor : WaccParserBaseVisitor<Expr>() {
     override fun visitLiteral(ctx: WaccParser.LiteralContext?): Expr {
-        when (ctx?.lit?.type) {
-            WaccLexer.INTLITER ->
-                return Expr.Literal.IntLiteral(ctx.lit.text.toInt())
-            WaccLexer.BOOLLITER ->
-                return Expr.Literal.BoolLiteral(ctx.lit.text == "true")
-            WaccLexer.CHARLITER -> return Expr.Literal.CharLiteral(ctx.lit.text[0])
-            WaccLexer.STRLITER -> return Expr.Literal.StringLiteral(ctx.lit.text)
-            WaccLexer.PAIRLITER -> return Expr.Literal.PairLiteral
+        if (ctx != null) {
+            when (ctx.lit.type) {
+                WaccLexer.INTLITER ->
+                    return Expr.Literal.IntLiteral(ctx.pos, ctx.lit.text.toInt())
+                WaccLexer.BOOLLITER ->
+                    return Expr.Literal.BoolLiteral(ctx.pos,ctx.lit.text == "true")
+                WaccLexer.CHARLITER -> return Expr.Literal.CharLiteral(ctx.pos, ctx.lit.text[0])
+                WaccLexer.STRLITER -> return Expr.Literal.StringLiteral(ctx.pos, ctx.lit.text)
+                WaccLexer.PAIRLITER -> return Expr.Literal.PairLiteral(ctx.pos)
+            }
         }
-        // TODO: find a better default return value, this should never run but the compilers asks
-        // for it
-        return Expr.Literal.IntLiteral(0)
+        throw IllegalStateException()
     }
 
     override fun visitIdExpr(ctx: WaccParser.IdExprContext?): Expr {
-        val name = ctx?.IDENT()?.text!!
-        return Expr.Ident(name)
+        val name = ctx!!.IDENT().text
+        return Expr.Ident(ctx.pos, name)
     }
 
     override fun visitArrayElemExpr(ctx: WaccParser.ArrayElemExprContext?): Expr {
         val arrayElemCtx = ctx?.arrayElem()
         val name = arrayElemCtx?.IDENT()?.text!!
         val exprs = arrayElemCtx.expr().map(this::visit).toTypedArray()
-        return Expr.ArrayElem(Expr.Ident(name), exprs)
+        return Expr.ArrayElem(ctx.pos, Expr.Ident(ctx.pos, name), exprs)
     }
 
     override fun visitUnaryOpExpr(ctx: WaccParser.UnaryOpExprContext?): Expr {
@@ -43,7 +42,7 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
             else -> UnaryOperator.BANG
         }
         val expr = visit(ctx?.expr())
-        return Expr.UnaryOp(operator, expr)
+        return Expr.UnaryOp(ctx!!.pos, operator, expr)
     }
 
     override fun visitBinaryOpExpr(ctx: WaccParser.BinaryOpExprContext?): Expr {
@@ -65,7 +64,7 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
         }
         val expr1 = visit(ctx?.expr(0))
         val expr2 = visit(ctx?.expr(1))
-        return Expr.BinaryOp(operator, expr1, expr2)
+        return Expr.BinaryOp(ctx!!.pos, operator, expr1, expr2)
     }
 
     override fun visitParensExpr(ctx: WaccParser.ParensExprContext?): Expr {

@@ -1,66 +1,67 @@
 package wacc.ast.semantics
 
 import wacc.ast.BinaryOperator
+import wacc.ast.FilePos
 import wacc.ast.Type
 import wacc.ast.UnaryOperator
 
-abstract class SemanticError(private val errName: String? = null) {
+abstract class SemanticError(private val errName: String? = null, private val pos: FilePos) {
     override fun toString(): String {
-        return "Error - $errName: "
+        return "Error - $errName: $msg (at ${pos.line}:${pos.posInLine})"
     }
 
     abstract val msg: String
 }
 
-data class FunctionEndError(val name: String) : SemanticError("invalid syntax") {
+class FunctionEndError(val name: String, pos: FilePos) : SemanticError("invalid syntax", pos) {
     override val msg: String
         get() = "function `$name` must end with `exit` or `return`"
 }
 
-data class IdentNotFoundError(val name: String) : SemanticError("identifier not found") {
+class IdentNotFoundError(val name: String, pos: FilePos) : SemanticError("identifier not found", pos) {
     override val msg: String
         get() = "`$name` does not exist"
 }
 
-data class DuplicateDeclarationError(val name: String) : SemanticError("duplicate declaration") {
+class DuplicateDeclarationError(val name: String, pos: FilePos) : SemanticError("duplicate declaration", pos) {
     override val msg: String
         get() = "`$name` has already been declared"
 }
 
 
-abstract class TypeError : SemanticError("type mismatch")
+abstract class TypeError(pos: FilePos) : SemanticError("type mismatch", pos)
 
-data class TypeMismatch(val expected: Type, val actual: Type) : TypeError() {
+class TypeMismatch(val expected: Type, val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "expected `$expected`, but got `$actual`"
 }
 
-data class ReadTypeMismatch(val actual: Type) : TypeError() {
+class ReadTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "attempted to read to a `$actual` type"
 }
 
-data class InvalidPairElemType(val actual: Type) : TypeError() {
+class InvalidPairElemType(val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "values of type `$actual` cannot be put in a pair"
 }
 
-data class FreeTypeMismatch(val actual: Type) : TypeError() {
+class FreeTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "cannot free a variable of type `$actual`"
 }
 
-data class BinaryOpInvalidType(val t1: Type, val func: BinaryOperator) : TypeError() {
+class BinaryOpInvalidType(val t1: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "`$func` needs a `$t1`, but needs one of `[${func.argTypes.joinToString(", ")}]`"
 }
 
-data class UnaryOpInvalidType(val actual: Type, val func: UnaryOperator) : TypeError() {
+class UnaryOpInvalidType(val actual: Type, val func: UnaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "`$func` needs a `$actual`, but needs a `${func.argType}`"
 }
 
-data class BinaryArgsMismatch(val t1: Type, val t2: Type, val func: BinaryOperator) : TypeError() {
+class BinaryArgsMismatch(val t1: Type, val t2: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "arguements of `$func` were `$t1` and `$t2`, but they should be the same type"
 }

@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import picocli.CommandLine.*
 import wacc.VERSION
+import wacc.ast.semantics.checkSemantics
 import wacc.cli.visitors.ProgramVisitor
 import wacc.utils.Logging
 import wacc.utils.logger
@@ -34,6 +35,8 @@ class Compile : Callable<Int>, Logging {
         val tree = parser.program()
         val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
+        val errors = program.checkSemantics().reversed()
+        errors.forEach(::println)
         return 0
     }
 }

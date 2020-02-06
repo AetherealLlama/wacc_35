@@ -1,6 +1,7 @@
 package wacc.ast.semantics
 
 import wacc.ast.BinaryOperator
+import wacc.ast.FilePos
 import wacc.ast.Type
 import wacc.ast.UnaryOperator
 
@@ -21,16 +22,16 @@ internal infix fun Type.matches(other: Type): Boolean {
 private val Type.PairElemType.normalType: Type
     get() = if (this is Type.PairPairElem) ANY_PAIR else this as Type
 
-internal fun Type.checkArrayType(depth: Int): Pair<Type, Errors> {
+internal fun Type.checkArrayType(depth: Int, pos: FilePos): Pair<Type, Errors> {
     if (depth == 0)
         return this to emptyList()
 
     if (this is Type.ArrayType)
-        return this.type.checkArrayType(depth-1)
+        return this.type.checkArrayType(depth-1, pos)
 
     var expectedType: Type = Type.AnyType
     repeat(depth) { expectedType = Type.ArrayType(expectedType) }
-    return Type.AnyType to listOf(TypeMismatch(expectedType, this))
+    return Type.AnyType to listOf(TypeMismatch(expectedType, this, pos))
 }
 
 // <editor-fold desc="Operator Types">
