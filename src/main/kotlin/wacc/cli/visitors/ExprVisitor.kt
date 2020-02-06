@@ -4,12 +4,20 @@ import WaccParserBaseVisitor
 import wacc.ast.BinaryOperator
 import wacc.ast.Expr
 import wacc.ast.UnaryOperator
+import java.lang.IllegalStateException
 
 class ExprVisitor : WaccParserBaseVisitor<Expr>() {
+    override fun visitInt(ctx: WaccParser.IntContext?): Expr {
+        ctx?.integer()?.let { int ->
+            var num = int.INTLITER().text.toInt()
+            if (int.sign?.type == WaccLexer.MINUS) num = -num
+            return Expr.Literal.IntLiteral(num)
+        }
+        throw IllegalStateException()
+    }
+
     override fun visitLiteral(ctx: WaccParser.LiteralContext?): Expr {
         when (ctx?.lit?.type) {
-            WaccLexer.INTLITER ->
-                return Expr.Literal.IntLiteral(ctx.lit.text.toInt())
             WaccLexer.BOOLLITER ->
                 return Expr.Literal.BoolLiteral(ctx.lit.text == "true")
             WaccLexer.CHARLITER -> return Expr.Literal.CharLiteral(ctx.lit.text[0])
