@@ -56,8 +56,13 @@ private fun Stat.checkSemantics(
             typeError = listOf(FreeTypeMismatch(type, pos))
         currentScope to errors + typeError
     }
-    is Stat.Return,
-    is Stat.Exit,
+    is Stat.Return -> currentScope to emptyList()
+    is Stat.Exit -> expr.checkSemantics(funcs, scopes).let { (type, errors) ->
+        var notIntError = emptyList<SemanticError>()
+        if (!(type matches Type.BaseType.TypeInt))
+            notIntError = listOf(TypeMismatch(Type.BaseType.TypeInt, type, pos))
+        currentScope to errors + notIntError
+    }
     is Stat.Print,
     is Stat.Println -> currentScope to emptyList()
     is Stat.IfThenElse -> {
