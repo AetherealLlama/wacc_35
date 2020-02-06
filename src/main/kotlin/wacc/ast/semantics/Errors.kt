@@ -63,6 +63,6 @@ class UnaryOpInvalidType(val actual: Type, val func: UnaryOperator, pos: FilePos
 
 class BinaryArgsMismatch(val t1: Type, val t2: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
-        get() = "arguements of `$func` were `$t1` and `$t2`, but they should be the same type"
+        get() = "arguments of `$func` were `$t1` and `$t2`, but they should be the same type"
 }
 
