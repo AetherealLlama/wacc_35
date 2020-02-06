@@ -9,7 +9,7 @@ import java.lang.IllegalStateException
 class ExprVisitor : WaccParserBaseVisitor<Expr>() {
     override fun visitInt(ctx: WaccParser.IntContext?): Expr {
         ctx?.integer()?.let { int ->
-            var num = int.INTLITER().text.toInt()
+            var num = int.INTLITER().text.toLong()
             if (int.sign?.type == WaccLexer.MINUS) num = -num
             return Expr.Literal.IntLiteral(num)
         }

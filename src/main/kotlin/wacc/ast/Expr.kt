@@ -2,7 +2,7 @@ package wacc.ast
 
 sealed class Expr {
     sealed class Literal : Expr() {
-        data class IntLiteral(val value: Int) : Literal()
+        data class IntLiteral(val value: Long) : Literal()
         data class BoolLiteral(val value: Boolean) : Literal()
         data class CharLiteral(val value: Char) : Literal()
         data class StringLiteral(val value: String) : Literal()
