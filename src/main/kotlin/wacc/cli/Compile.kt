@@ -5,6 +5,7 @@ import WaccParser
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import picocli.CommandLine.*
+import wacc.SyntaxErrorListener
 import wacc.VERSION
 import wacc.ast.semantics.checkSemantics
 import wacc.cli.visitors.ProgramVisitor
@@ -32,7 +33,15 @@ class Compile : Callable<Int>, Logging {
         val lexer = WaccLexer(charStream)
         val tokens = CommonTokenStream(lexer)
         val parser = WaccParser(tokens)
+        parser.removeErrorListeners()
+        parser.addErrorListener(SyntaxErrorListener())
         val tree = parser.program()
+
+        if (parser.numberOfSyntaxErrors > 0) {
+            println("${parser.numberOfSyntaxErrors} syntax errors. Halting compilation.")
+            return 100
+        }
+
         val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
         val errors = program.checkSemantics().reversed()

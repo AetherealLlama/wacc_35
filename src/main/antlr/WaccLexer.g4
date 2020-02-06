@@ -2,8 +2,7 @@ lexer grammar WaccLexer;
 
 // Types and literals
 BASETYPE: INT | BOOL | CHAR | STRING ;
-fragment INTSIGN: PLUS | MINUS ;
-INTLITER: INTSIGN? DIGIT+ ;
+INTLITER: DIGIT+ ;
 BOOLLITER: TRUE | FALSE ;
 CHARLITER: '\'' CHARACTER '\'' ;
 STRLITER: '"' CHARACTER* '"' ;

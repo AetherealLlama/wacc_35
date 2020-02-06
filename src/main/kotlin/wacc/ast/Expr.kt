@@ -2,7 +2,7 @@ package wacc.ast
 
 sealed class Expr(pos: FilePos) : ASTNode(pos) {
     sealed class Literal(pos: FilePos) : Expr(pos) {
-        class IntLiteral(pos: FilePos, val value: Int) : Literal(pos)
+        class IntLiteral(pos: FilePos, val value: Long) : Literal(pos)
         class BoolLiteral(pos: FilePos, val value: Boolean) : Literal(pos)
         class CharLiteral(pos: FilePos, val value: Char) : Literal(pos)
         class StringLiteral(pos: FilePos, val value: String) : Literal(pos)
