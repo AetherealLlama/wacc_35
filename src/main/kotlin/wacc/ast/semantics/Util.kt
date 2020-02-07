@@ -22,6 +22,15 @@ internal infix fun Type.matches(other: Type): Boolean {
 internal val Type.PairElemType.normalType: Type
     get() = if (this is Type.PairPairElem) ANY_PAIR else this as Type
 
+internal val Type.asPairElemType: Type.PairElemType?
+    get() {
+        if (this is Type.PairType)
+            return Type.PairPairElem
+        if (this is Type.PairElemType)
+            return this
+        return null
+    }
+
 internal fun Type.checkArrayType(depth: Int, pos: FilePos): Pair<Type, Errors> {
     if (depth == 0)
         return this to emptyList()

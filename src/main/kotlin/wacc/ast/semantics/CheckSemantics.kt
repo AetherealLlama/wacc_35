@@ -127,16 +127,10 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         val (fstRawType, fstErrors) = expr1.checkSemantics(ctx)
         val (sndRawType, sndErrors) = expr2.checkSemantics(ctx)
         // Make sure elems are types that can be put in pairs
-        val (fstType, fstTypeError) =
-                if (fstRawType is Type.PairElemType)
-                    (fstRawType as Type.PairElemType) to emptyList<SemanticError>()
-                else
-                    Type.AnyType to listOf(InvalidPairElemType(fstRawType, pos))
-        val (sndType, sndTypeError) =
-                if (sndRawType is Type.PairElemType)
-                    (sndRawType as Type.PairElemType) to emptyList<SemanticError>()
-                else
-                    Type.AnyType to listOf(InvalidPairElemType(sndRawType, pos))
+        val (fstType, fstTypeError) = fstRawType.asPairElemType?.let { it to emptyList<SemanticError>() }
+                ?: Type.AnyType to listOf(InvalidPairElemType(fstRawType, pos))
+        val (sndType, sndTypeError) = sndRawType.asPairElemType?.let { it to emptyList<SemanticError>() }
+                ?: Type.AnyType to listOf(InvalidPairElemType(sndRawType, pos))
         Type.PairType(fstType, sndType) to listOf(fstErrors, sndErrors, fstTypeError, sndTypeError).flatten()
     }
     is AssignRhs.PairElem -> expr.checkPairElem(ctx)(accessor)
