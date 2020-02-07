@@ -19,7 +19,7 @@ internal infix fun Type.matches(other: Type): Boolean {
     return this.javaClass == other.javaClass
 }
 
-private val Type.PairElemType.normalType: Type
+internal val Type.PairElemType.normalType: Type
     get() = if (this is Type.PairPairElem) ANY_PAIR else this as Type
 
 internal fun Type.checkArrayType(depth: Int, pos: FilePos): Pair<Type, Errors> {
