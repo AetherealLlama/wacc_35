@@ -43,12 +43,12 @@ argList: expr (COMMA expr)* ;
 
 pairElem: acc=(FST | SND) expr ;
 
-type: BASETYPE                                                     # BaseType
+type: bt=(INT | BOOL | CHAR | STRING)                              # BaseType
     | type OPEN_SQUARE_BR CLOSE_SQUARE_BR                          # ArrayType
     | PAIR OPEN_PAREN pairElemType COMMA pairElemType CLOSE_PAREN  # PairType
     ;
 
-pairElemType: BASETYPE                            # BasePairElemType
+pairElemType: bt=(INT | BOOL | CHAR | STRING)     # BasePairElemType
             | type OPEN_SQUARE_BR CLOSE_SQUARE_BR # ArrayPairElemType
             | PAIR                                # PairPairElemType
             ;
