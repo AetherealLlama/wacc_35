@@ -1,5 +1,13 @@
 package wacc.ast
 
+/***
+ * A statement AST Node
+ *
+ * Statement nodes representing different statements in the language specification,
+ * extends the base ASTNode. Has different properties found in the specification.
+ *
+ * @property pos the position in the source of the start of the statement
+ */
 sealed class Stat(pos: FilePos) : ASTNode(pos) {
     class Skip(pos: FilePos) : Stat(pos)
     class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos)
@@ -16,6 +24,10 @@ sealed class Stat(pos: FilePos) : ASTNode(pos) {
     class Compose(pos: FilePos, val stat1: Stat, val stat2: Stat) : Stat(pos)
 }
 
+/**
+ * A statement fragment used in multiple statement cases representing either a variable
+ * or array element.
+ */
 sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
     class Variable(pos: FilePos, val name: String) : AssignLhs(pos)
     class ArrayElem(pos: FilePos, val name: String, val exprs: Array<Expr>) : AssignLhs(pos) {
@@ -41,6 +53,10 @@ sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
     class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignLhs(pos)
 }
 
+/**
+ * A statement fragment used in multiple statement cases: an expression, literal, pair element,
+ * new pair or function return.
+ */
 sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
     class Expression(pos: FilePos, val expr: Expr) : AssignRhs(pos)
     class ArrayLiteral(pos: FilePos, val exprs: Array<Expr>) : AssignRhs(pos) {

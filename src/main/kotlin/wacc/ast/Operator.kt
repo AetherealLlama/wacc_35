@@ -1,5 +1,8 @@
 package wacc.ast
 
+/**
+ * Unary operators used in expressions
+ */
 enum class UnaryOperator {
     BANG,
     MINUS,
@@ -8,6 +11,9 @@ enum class UnaryOperator {
     CHR
 }
 
+/**
+ * Binary operators used in expressions
+ */
 enum class BinaryOperator {
     MUL,
     DIV,

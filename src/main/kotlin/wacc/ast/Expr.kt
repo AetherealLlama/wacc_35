@@ -1,5 +1,13 @@
 package wacc.ast
 
+/***
+ * An expression AST Node
+ *
+ * Expression node representing different expressions in the language specification,
+ * namely literals, variables or operator application.
+ *
+ * @property pos the position in the source of the start of the statement
+ */
 sealed class Expr(pos: FilePos) : ASTNode(pos) {
     sealed class Literal(pos: FilePos) : Expr(pos) {
         class IntLiteral(pos: FilePos, val value: Long) : Literal(pos)

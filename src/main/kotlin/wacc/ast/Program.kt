@@ -1,5 +1,12 @@
 package wacc.ast
 
+/**
+ * The root node of our AST: the Program
+ *
+ * @property funcs the array of functions beginning a program
+ * @property stat the program's statement
+ */
+
 data class Program(val funcs: Array<Func>, val stat: Stat) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

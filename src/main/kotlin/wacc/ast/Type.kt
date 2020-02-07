@@ -2,6 +2,9 @@ package wacc.ast
 
 import wacc.ast.semantics.asNormalType
 
+/**
+ * The type of an AssignLhs, AssignRhs or an expression
+ */
 sealed class Type {
     abstract val display: String
     override fun toString(): String = display

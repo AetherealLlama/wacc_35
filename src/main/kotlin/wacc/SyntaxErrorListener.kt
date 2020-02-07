@@ -7,6 +7,7 @@ import wacc.utils.Logging
 import wacc.utils.getClassForLogging
 import wacc.utils.logger
 
+// New ANTLR Error listener making use of the logger
 class SyntaxErrorListener() : BaseErrorListener(), Logging {
     override fun syntaxError(recognizer: Recognizer<*, *>?,
                              offendingSymbol: Any?,
