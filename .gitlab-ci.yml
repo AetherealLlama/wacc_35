@@ -1,5 +1,11 @@
 image: gradle:alpine
 
+stages:
+  - build
+  - test-valid
+  - test-invalid-syntactic
+  - test-invalid-semantic
+
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
   GIT_SUBMODULE_STRATEGY: recursive
@@ -17,9 +23,30 @@ build:
       - build
       - .gradle
 
-test:
-  stage: test
-  script: gradle check
+test-valid:
+  stage: test-valid
+  script: gradle test --test wacc.TestValidPrograms
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: pull
+    paths:
+      - build
+      - .gradle
+
+test-syntactic:
+  stage: test-invalid-syntactic
+  script: gradle test --test wacc.TestInvalidSyntacticPrograms
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: pull
+    paths:
+      - build
+      - .gradle
+
+
+test-semantic:
+  stage: test-invalid-semantic
+  script: gradle test --test wacc.TestInvalidSemanticPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: pull
