@@ -69,7 +69,7 @@ class FreeTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
 
 class BinaryOpInvalidType(val t1: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
-        get() = "`$func` needs a `$t1`, but needs one of `[${func.argTypes.joinToString(", ")}]`"
+        get() = "`$func` received a `$t1`, but needs one of `[${func.argTypes.joinToString(", ")}]`"
 }
 
 class UnaryOpInvalidType(val actual: Type, val func: UnaryOperator, pos: FilePos) : TypeError(pos) {
