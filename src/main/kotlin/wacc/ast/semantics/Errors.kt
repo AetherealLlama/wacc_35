@@ -3,7 +3,7 @@ package wacc.ast.semantics
 import wacc.ast.*
 
 abstract class ProgramError(
-        private val isSemantic: Boolean,
+        val isSemantic: Boolean,
         private val errName: String,
         private val pos: FilePos
 ) : Comparable<ProgramError> {

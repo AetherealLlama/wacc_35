@@ -48,7 +48,9 @@ class Compile : Callable<Int>, Logging {
         val program = programVisitor.visit(tree)
         val errors = program.checkSemantics().reversed()
         errors.sorted().forEach(::println)
-        if (errors.isNotEmpty())
+        if (errors.filter { !it.isSemantic }.isNotEmpty())
+            return RETURN_CODE_SYNTACTIC_ERROR
+        if (errors.filter { it.isSemantic }.isNotEmpty())
             return RETURN_CODE_SEMANTIC_ERROR
         return RETURN_CODE_OK
     }
