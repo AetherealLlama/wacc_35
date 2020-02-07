@@ -8,18 +8,18 @@ internal typealias Errors = List<SemanticError>
 
 
 fun Program.checkSemantics(): Errors =
-    funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
-            stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
+        funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
+                stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
 
 private fun Func.checkSemantics(ctx: SemanticContext): Errors =
         stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
 
-private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = when(this) {
+private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = when (this) {
     is Stat.Skip -> ctx.currentScope to emptyList()
     is Stat.AssignNew -> {
         val (rhsType, rhsErrors) = rhs.checkSemantics(ctx)
         val typeError = if (!(rhsType matches type)) listOf(TypeMismatch(type, rhsType, pos))
-                        else emptyList<SemanticError>()
+        else emptyList<SemanticError>()
         if (name in ctx.currentScope.map { it.first })
             ctx.currentScope to rhsErrors + typeError + listOf(DuplicateDeclarationError(name, pos))
         else
@@ -53,7 +53,7 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
     }
     is Stat.Exit -> expr.checkSemantics(ctx).let { (type, expErrors) ->
         val typeError = if (type matches Type.BaseType.TypeInt) emptyList<SemanticError>()
-                        else listOf(ExitTypeMismatch(type, pos))
+        else listOf(ExitTypeMismatch(type, pos))
         ctx.currentScope to expErrors + typeError
     }
     is Stat.Print,
@@ -77,7 +77,7 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
     }
 }.let { (scope, errors) -> scope to errors + checkLastStatement(ctx) }
 
-private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when(this) {
+private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
     is Expr.Literal.IntLiteral -> Type.BaseType.TypeInt to emptyList()
     is Expr.Literal.BoolLiteral -> Type.BaseType.TypeBool to emptyList()
     is Expr.Literal.CharLiteral -> Type.BaseType.TypeChar to emptyList()
@@ -95,20 +95,22 @@ private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when
         val (arg2Type, arg2Errors) = expr2.checkSemantics(ctx)
         val errors = mutableListOf<SemanticError>().apply { addAll(arg1Errors); addAll(arg2Errors) }
         // Args must match possible function's accepted types
-        if (operator.argTypes.none { arg1Type matches it }) errors += BinaryOpInvalidType(arg1Type, operator, pos)
+        if (operator.argTypes.none { arg1Type matches it })
+            errors += BinaryOpInvalidType(arg1Type, operator, pos)
         // Args must match eachother
-        if (!(arg1Type matches arg2Type)) errors += BinaryArgsMismatch(arg1Type, arg2Type, operator, pos)
+        if (!(arg1Type matches arg2Type))
+            errors += BinaryArgsMismatch(arg1Type, arg2Type, operator, pos)
         operator.returnType to errors
     }
 }
 
-private fun AssignLhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when(this) {
+private fun AssignLhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
     is AssignLhs.Variable -> checkIdent(name, ctx, pos)
     is AssignLhs.ArrayElem -> checkArrayElem(Expr.Ident(pos, name), exprs, ctx, pos)
     is AssignLhs.PairElem -> expr.checkPairElem(ctx)(accessor)
 }
 
-private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when(this) {
+private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
     is AssignRhs.Expression -> expr.checkSemantics(ctx)
     is AssignRhs.ArrayLiteral -> {
         val checkedExprs = exprs.map { it.checkSemantics(ctx) }
@@ -144,10 +146,12 @@ private fun Expr.checkBool(ctx: SemanticContext): Errors {
 private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Type, Errors> {
     val (exprType, exprErrors) = checkSemantics(ctx)
     return if (exprType matches ANY_PAIR)
-        { accessor -> when (accessor) {
-            PairAccessor.FST -> (exprType as Type.PairType).type1
-            PairAccessor.SND -> (exprType as Type.PairType).type2
-        }.let { pairElemType -> pairElemType.asNormalType to exprErrors } }
+        { accessor ->
+            when (accessor) {
+                PairAccessor.FST -> (exprType as Type.PairType).type1
+                PairAccessor.SND -> (exprType as Type.PairType).type2
+            }.let { pairElemType -> pairElemType.asNormalType to exprErrors }
+        }
     else
         { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
 }
@@ -162,12 +166,12 @@ private fun checkArrayElem(
 }
 
 private fun checkIdent(name: String, ctx: SemanticContext, pos: FilePos): Pair<Type, Errors> =
-    ctx.scopes.flatten().firstOrNull { it.first == name }?.let { it.second to emptyList<SemanticError>() }
-            ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
+        ctx.scopes.flatten().firstOrNull { it.first == name }?.let { it.second to emptyList<SemanticError>() }
+                ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
 
 private fun Stat.checkLastStatement(ctx: SemanticContext): Errors = if (ctx.isLastStat) {
     val getError = ctx.func?.let { { FunctionEndError(it.name, pos) } } ?: { ProgramEndError(pos) }
-    when(this) {
+    when (this) {
         is Stat.Return -> ctx.func?.let { emptyList<SemanticError>() } ?: listOf(getError())
         is Stat.IfThenElse,
         is Stat.WhileDo,
