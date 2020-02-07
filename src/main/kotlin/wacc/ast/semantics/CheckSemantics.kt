@@ -56,8 +56,8 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
         else listOf(ExitTypeMismatch(type, pos))
         ctx.currentScope to expErrors + typeError
     }
-    is Stat.Print,
-    is Stat.Println -> ctx.currentScope to emptyList()
+    is Stat.Print -> ctx.currentScope to expr.checkSemantics(ctx).second
+    is Stat.Println -> ctx.currentScope to expr.checkSemantics(ctx).second
     is Stat.IfThenElse -> {
         val exprErrors = expr.checkBool(ctx)
         val (_, branch1Errors) = branch1.checkSemantics(ctx.withNewScope())
