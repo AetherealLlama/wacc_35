@@ -1,6 +1,6 @@
 package wacc
 
-const val VERSION = "0.0.1"
+const val VERSION = "0.2"
 const val DEFAULT_EXTENSION = "wacc"
 
 const val RETURN_CODE_OK = 0
