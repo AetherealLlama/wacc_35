@@ -3,7 +3,7 @@
 GRADLE := ./gradlew
 
 all:
-	$(GRADLE) build
+	$(GRADLE) build -x test
 
 test:
 	$(GRADLE) test
