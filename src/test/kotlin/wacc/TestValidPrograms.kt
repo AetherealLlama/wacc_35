@@ -1,8 +1,14 @@
 package wacc
 
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ErrorCollector
 
 class TestValidPrograms {
+    @Rule
+    @JvmField
+    val collector = ErrorCollector()
+
     private val returnCode = RETURN_CODE_OK
     private val basePath = "wacc_examples/valid/"
     private val directories = arrayOf(
@@ -23,6 +29,6 @@ class TestValidPrograms {
 
     @Test
     fun runTests() {
-        directories.forEach(TestDirectory::testPrograms)
+        directories.forEach { it.testPrograms(collector) }
     }
 }

@@ -1,8 +1,14 @@
 package wacc
 
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ErrorCollector
 
 class TestInvalidSemanticPrograms {
+    @Rule
+    @JvmField
+    val collector = ErrorCollector()
+
     private val returnCode = RETURN_CODE_SEMANTIC_ERROR
     private val basePath = "wacc_examples/invalid/semanticErr/"
     private val directories = arrayOf(
@@ -23,6 +29,6 @@ class TestInvalidSemanticPrograms {
 
     @Test
     fun runTests() {
-        directories.forEach(TestDirectory::testPrograms)
+        directories.forEach { it.testPrograms(collector) }
     }
 }
