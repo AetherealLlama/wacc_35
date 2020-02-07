@@ -1,9 +1,15 @@
 package wacc
 
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ErrorCollector
 
 class TestInvalidSyntacticPrograms {
-    private val returnCode = 100
+    @Rule
+    @JvmField
+    val collector = ErrorCollector()
+
+    private val returnCode = RETURN_CODE_SYNTACTIC_ERROR
     private val basePath = "wacc_examples/invalid/syntaxErr/"
     private val directories = arrayOf(
             TestDirectory(basePath + "array", returnCode),
@@ -20,6 +26,6 @@ class TestInvalidSyntacticPrograms {
 
     @Test
     fun runTests() {
-        directories.forEach(TestDirectory::testPrograms)
+        directories.forEach { it.testPrograms(collector) }
     }
 }

@@ -1,24 +1,24 @@
 package wacc.ast
 
-sealed class Stat {
-    object Skip : Stat()
-    data class AssignNew(val type: Type, val name: String, val rhs: AssignRhs) : Stat()
-    data class Assign(val lhs: AssignLhs, val rhs: AssignRhs) : Stat()
-    data class Read(val lhs: AssignLhs) : Stat()
-    data class Free(val expr: Expr) : Stat()
-    data class Return(val expr: Expr) : Stat()
-    data class Exit(val expr: Expr) : Stat()
-    data class Print(val expr: Expr) : Stat()
-    data class Println(val expr: Expr) : Stat()
-    data class IfThenElse(val expr: Expr, val branch1: Stat, val branch2: Stat) : Stat()
-    data class WhileDo(val expr: Expr, val stat: Stat) : Stat()
-    data class Begin(val stat: Stat) : Stat()
-    data class Compose(val stat1: Stat, val stat2: Stat) : Stat()
+sealed class Stat(pos: FilePos) : ASTNode(pos) {
+    class Skip(pos: FilePos) : Stat(pos)
+    class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos)
+    class Assign(pos: FilePos, val lhs: AssignLhs, val rhs: AssignRhs) : Stat(pos)
+    class Read(pos: FilePos, val lhs: AssignLhs) : Stat(pos)
+    class Free(pos: FilePos, val expr: Expr) : Stat(pos)
+    class Return(pos: FilePos, val expr: Expr) : Stat(pos)
+    class Exit(pos: FilePos, val expr: Expr) : Stat(pos)
+    class Print(pos: FilePos, val expr: Expr) : Stat(pos)
+    class Println(pos: FilePos, val expr: Expr) : Stat(pos)
+    class IfThenElse(pos: FilePos, val expr: Expr, val branch1: Stat, val branch2: Stat) : Stat(pos)
+    class WhileDo(pos: FilePos, val expr: Expr, val stat: Stat) : Stat(pos)
+    class Begin(pos: FilePos, val stat: Stat) : Stat(pos)
+    class Compose(pos: FilePos, val stat1: Stat, val stat2: Stat) : Stat(pos)
 }
 
-sealed class AssignLhs {
-    data class Variable(val name: String) : AssignLhs()
-    data class ArrayElem(val name: String, val exprs: Array<Expr>) : AssignLhs() {
+sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
+    class Variable(pos: FilePos, val name: String) : AssignLhs(pos)
+    class ArrayElem(pos: FilePos, val name: String, val exprs: Array<Expr>) : AssignLhs(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -38,12 +38,12 @@ sealed class AssignLhs {
         }
     }
 
-    data class PairElem(val accessor: PairAccessor, val expr: Expr) : AssignLhs()
+    class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignLhs(pos)
 }
 
-sealed class AssignRhs {
-    data class Expression(val expr: Expr) : AssignRhs()
-    data class ArrayLiteral(val exprs: Array<Expr>) : AssignRhs() {
+sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
+    class Expression(pos: FilePos, val expr: Expr) : AssignRhs(pos)
+    class ArrayLiteral(pos: FilePos, val exprs: Array<Expr>) : AssignRhs(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -60,9 +60,9 @@ sealed class AssignRhs {
         }
     }
 
-    data class Newpair(val expr1: Expr, val expr2: Expr) : AssignRhs()
-    data class PairElem(val accessor: PairAccessor, val expr: Expr) : AssignRhs()
-    data class Call(val name: String, val args: Array<Expr>) : AssignRhs() {
+    class Newpair(pos: FilePos, val expr1: Expr, val expr2: Expr) : AssignRhs(pos)
+    class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignRhs(pos)
+    class Call(pos: FilePos, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false

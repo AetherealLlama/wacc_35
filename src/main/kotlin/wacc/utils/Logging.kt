@@ -14,4 +14,4 @@ inline fun <T : Any> getClassForLogging(javaClass: Class<T>): Class<*> {
 
 inline fun getRootLogger(): Logger = getLogger(Logger.ROOT_LOGGER_NAME)
 
-inline fun <reified T : Logging> T.logger(): Logger = getLogger(getClassForLogging(T::class.java))
+inline fun <reified T : Logging> T.logger(): Logger = getLogger(getClassForLogging(this.javaClass))

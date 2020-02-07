@@ -5,8 +5,12 @@ import WaccParser
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import picocli.CommandLine.*
+import wacc.RETURN_CODE_OK
+import wacc.RETURN_CODE_SEMANTIC_ERROR
+import wacc.RETURN_CODE_SYNTACTIC_ERROR
 import wacc.SyntaxErrorListener
 import wacc.VERSION
+import wacc.ast.semantics.checkSemantics
 import wacc.cli.visitors.ProgramVisitor
 import wacc.utils.Logging
 import wacc.utils.logger
@@ -26,7 +30,6 @@ class Compile : Callable<Int>, Logging {
     private var debug = false
 
     override fun call(): Int {
-        logger.info("Debug mode is ${if (debug) "on" else "off"}")
         val inputStream = FileInputStream(files!![0])
         val charStream = CharStreams.fromStream(inputStream)
         val lexer = WaccLexer(charStream)
@@ -38,11 +41,15 @@ class Compile : Callable<Int>, Logging {
 
         if (parser.numberOfSyntaxErrors > 0) {
             println("${parser.numberOfSyntaxErrors} syntax errors. Halting compilation.")
-            return 100
+            return RETURN_CODE_SYNTACTIC_ERROR
         }
 
         val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
-        return 0
+        val errors = program.checkSemantics().reversed()
+        errors.sorted().forEach(::println)
+        if (errors.isNotEmpty())
+            return RETURN_CODE_SEMANTIC_ERROR
+        return RETURN_CODE_OK
     }
 }

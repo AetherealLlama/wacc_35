@@ -1,6 +1,8 @@
 package wacc
 
 import org.apache.commons.io.FilenameUtils
+import org.hamcrest.CoreMatchers.equalTo
+import org.junit.rules.ErrorCollector
 import picocli.CommandLine
 import wacc.cli.Compile
 import wacc.utils.Logging
@@ -17,12 +19,15 @@ class TestDirectory(path: String, private val returnCode: Int) : Logging {
             .filter { Files.isRegularFile(it) }
             .filter { FilenameUtils.getExtension(it.toString()) == DEFAULT_EXTENSION }
 
-    fun testPrograms() {
+    fun testPrograms(collector: ErrorCollector) {
         programs.forEach {
             logger.info("Testing program $it")
             val exitCode = CommandLine(Compile()).execute(it.toString())
-            logger.info("Got exit code $exitCode, expected code $returnCode")
-            assertEquals(returnCode, exitCode)
+            if (exitCode != returnCode)
+                logger.warn("Got exit code $exitCode, expected code $returnCode")
+            else
+                logger.info("Got expected error code $exitCode")
+            collector.checkThat(exitCode, equalTo(returnCode))
         }
     }
 }

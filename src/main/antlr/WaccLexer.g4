@@ -1,7 +1,6 @@
 lexer grammar WaccLexer;
 
 // Types and literals
-BASETYPE: INT | BOOL | CHAR | STRING ;
 INTLITER: DIGIT+ ;
 BOOLLITER: TRUE | FALSE ;
 CHARLITER: '\'' CHARACTER '\'' ;

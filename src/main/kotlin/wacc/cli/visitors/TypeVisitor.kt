@@ -2,18 +2,18 @@ package wacc.cli.visitors
 
 import WaccParserBaseVisitor
 import wacc.ast.Type
+import java.lang.IllegalStateException
 
 class TypeVisitor : WaccParserBaseVisitor<Type>() {
     private val pairElemTypeVisitor = PairElemTypeVisitor()
 
     override fun visitBaseType(ctx: WaccParser.BaseTypeContext?): Type {
-        return when (ctx?.BASETYPE()?.symbol?.type) {
+        return when (ctx?.bt?.type) {
             WaccLexer.INT -> Type.BaseType.TypeInt
             WaccLexer.BOOL -> Type.BaseType.TypeBool
             WaccLexer.CHAR -> Type.BaseType.TypeChar
             WaccLexer.STRING -> Type.BaseType.TypeString
-            // TODO: find a better alternative than returning TypeInt
-            else -> Type.BaseType.TypeInt
+            else -> throw IllegalStateException()
         }
     }
 
@@ -33,12 +33,12 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
 
         override fun visitBasePairElemType(ctx: WaccParser.BasePairElemTypeContext?): Type.PairElemType {
             // TODO: find a way to remove code duplication here
-            return when (ctx?.BASETYPE()?.symbol?.type) {
+            return when (ctx?.bt?.type) {
                 WaccLexer.INT -> Type.BaseType.TypeInt
                 WaccLexer.BOOL -> Type.BaseType.TypeBool
                 WaccLexer.CHAR -> Type.BaseType.TypeChar
                 WaccLexer.STRING -> Type.BaseType.TypeString
-                else -> Type.BaseType.TypeInt
+                else -> throw IllegalStateException()
             }
         }
 

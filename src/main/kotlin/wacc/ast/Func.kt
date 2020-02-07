@@ -1,6 +1,6 @@
 package wacc.ast
 
-data class Func(val type: Type, val name: String, val params: Array<Param>, val stat: Stat) {
+class Func(pos: FilePos, val type: Type, val name: String, val params: Array<Param>, val stat: Stat) : ASTNode(pos) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -17,4 +17,4 @@ data class Func(val type: Type, val name: String, val params: Array<Param>, val 
     }
 }
 
-data class Param(val type: Type, val name: String)
+class Param(pos: FilePos, val type: Type, val name: String) : ASTNode(pos)

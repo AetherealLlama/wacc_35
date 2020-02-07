@@ -1,17 +1,17 @@
 package wacc.ast
 
-sealed class Expr {
-    sealed class Literal : Expr() {
-        data class IntLiteral(val value: Long) : Literal()
-        data class BoolLiteral(val value: Boolean) : Literal()
-        data class CharLiteral(val value: Char) : Literal()
-        data class StringLiteral(val value: String) : Literal()
-        object PairLiteral : Literal()
+sealed class Expr(pos: FilePos) : ASTNode(pos) {
+    sealed class Literal(pos: FilePos) : Expr(pos) {
+        class IntLiteral(pos: FilePos, val value: Long) : Literal(pos)
+        class BoolLiteral(pos: FilePos, val value: Boolean) : Literal(pos)
+        class CharLiteral(pos: FilePos, val value: Char) : Literal(pos)
+        class StringLiteral(pos: FilePos, val value: String) : Literal(pos)
+        class PairLiteral(pos: FilePos) : Literal(pos)
     }
 
-    data class Ident(val name: String) : Expr()
+    class Ident(pos: FilePos, val name: String) : Expr(pos)
 
-    data class ArrayElem(val name: Ident, val exprs: Array<Expr>) : Expr() {
+    class ArrayElem(pos: FilePos, val name: Ident, val exprs: Array<Expr>) : Expr(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -31,6 +31,6 @@ sealed class Expr {
         }
     }
 
-    data class UnaryOp(val operator: UnaryOperator, val expr: Expr) : Expr()
-    data class BinaryOp(val operator: BinaryOperator, val expr1: Expr, val expr2: Expr) : Expr()
+    class UnaryOp(pos: FilePos, val operator: UnaryOperator, val expr: Expr) : Expr(pos)
+    class BinaryOp(pos: FilePos, val operator: BinaryOperator, val expr1: Expr, val expr2: Expr) : Expr(pos)
 }
