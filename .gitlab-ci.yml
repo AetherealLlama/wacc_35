@@ -23,7 +23,7 @@ build:
       - build
       - .gradle
 
-test-valid:
+test valid:
   stage: test-valid
   script: gradle test --test wacc.TestValidPrograms
   cache:
@@ -33,7 +33,7 @@ test-valid:
       - build
       - .gradle
 
-test-syntactic:
+test syntactic:
   stage: test-invalid-syntactic
   script: gradle test --test wacc.TestInvalidSyntacticPrograms
   cache:
@@ -44,7 +44,7 @@ test-syntactic:
       - .gradle
 
 
-test-semantic:
+test semantic:
   stage: test-invalid-semantic
   script: gradle test --test wacc.TestInvalidSemanticPrograms
   cache:
