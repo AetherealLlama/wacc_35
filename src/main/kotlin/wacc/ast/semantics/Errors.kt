@@ -33,10 +33,6 @@ class ProgramEndError(pos: FilePos) : SyntaxError("invalid syntax", pos) {
     override val msg = "any execution path through program must end with `exit`"
 }
 
-class ReturnOutsideFuncError(pos: FilePos) : SyntaxError("return outside of function", pos) {
-    override val msg = "`return` cannot be used when outside a function"
-}
-
 class CallWrongNumberOfArguments(val given: Int, val needed: Int, val name: String, pos: FilePos) : SyntaxError("call with wrong number of arguments", pos) {
     override val msg: String
         get() = "function `$name` needs $needed arguments but was instead given $given"
@@ -70,6 +66,10 @@ class FunctionRedefinition(val name: String, pos: FilePos) : SemanticError("func
 
 class PairDereferenceNull(pos: FilePos) : SemanticError("null access", pos) {
     override val msg: String = "null cannot be dereferenced as a pair"
+}
+
+class ReturnOutsideFuncError(pos: FilePos) : SemanticError("return outside of function", pos) {
+    override val msg = "`return` cannot be used when outside a function"
 }
 
 // <editor-fold desc="Type Errors">
