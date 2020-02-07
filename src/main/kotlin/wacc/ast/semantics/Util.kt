@@ -71,7 +71,7 @@ internal val BinaryOperator.argTypes: List<Type>
         BinaryOperator.LT,
         BinaryOperator.LTE -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeChar)
         BinaryOperator.EQ,
-        BinaryOperator.NEQ -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeBool, Type.BaseType.TypeChar,
+        BinaryOperator.NEQ -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeBool, Type.BaseType.TypeChar, Type.BaseType.TypeString,
                 Type.ArrayType(Type.AnyType), Type.PairType(Type.AnyType, Type.AnyType))
         BinaryOperator.LAND,
         BinaryOperator.LOR -> listOf(Type.BaseType.TypeBool)
