@@ -3,7 +3,7 @@ package wacc
 import org.junit.Test
 
 class TestInvalidSyntacticPrograms {
-    private val returnCode = 100
+    private val returnCode = RETURN_CODE_SYNTACTIC_ERROR
     private val basePath = "wacc_examples/invalid/syntaxErr/"
     private val directories = arrayOf(
             TestDirectory(basePath + "array", returnCode),

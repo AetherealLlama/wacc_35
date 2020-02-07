@@ -3,7 +3,7 @@ package wacc
 import org.junit.Test
 
 class TestValidPrograms {
-    private val returnCode = 0
+    private val returnCode = RETURN_CODE_OK
     private val basePath = "wacc_examples/valid/"
     private val directories = arrayOf(
             TestDirectory(basePath + "advanced", returnCode),

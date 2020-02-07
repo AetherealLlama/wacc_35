@@ -3,7 +3,7 @@ package wacc
 import org.junit.Test
 
 class TestInvalidSemanticPrograms {
-    private val returnCode = 200
+    private val returnCode = RETURN_CODE_SEMANTIC_ERROR
     private val basePath = "wacc_examples/invalid/semanticErr/"
     private val directories = arrayOf(
             TestDirectory(basePath + "exit", returnCode),
