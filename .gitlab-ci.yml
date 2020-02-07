@@ -15,7 +15,7 @@ before_script:
 
 build:
   stage: build
-  script: gradle --build-cache assemble
+  script: gradle -i --build-cache assemble
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: push
@@ -25,7 +25,7 @@ build:
 
 test valid:
   stage: test-valid
-  script: gradle test --tests wacc.TestValidPrograms
+  script: gradle test -i --tests wacc.TestValidPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: pull
@@ -35,7 +35,7 @@ test valid:
 
 test syntactic:
   stage: test-invalid-syntactic
-  script: gradle test --tests wacc.TestInvalidSyntacticPrograms
+  script: gradle test -i --tests wacc.TestInvalidSyntacticPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: pull
@@ -46,7 +46,7 @@ test syntactic:
 
 test semantic:
   stage: test-invalid-semantic
-  script: gradle test --tests wacc.TestInvalidSemanticPrograms
+  script: gradle test -i --tests wacc.TestInvalidSemanticPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: pull
