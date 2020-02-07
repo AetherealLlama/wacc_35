@@ -36,7 +36,7 @@ internal fun Type.checkArrayType(depth: Int, pos: FilePos): Pair<Type, Errors> {
         return this to emptyList()
 
     if (this is Type.ArrayType)
-        return this.type.checkArrayType(depth-1, pos)
+        return this.type.checkArrayType(depth - 1, pos)
 
     var expectedType: Type = Type.AnyType
     repeat(depth) { expectedType = Type.ArrayType(expectedType) }
@@ -46,11 +46,11 @@ internal fun Type.checkArrayType(depth: Int, pos: FilePos): Pair<Type, Errors> {
 // <editor-fold desc="Operator Types">
 
 private val unaryOpTypes: Map<UnaryOperator, Pair<Type, Type>> = mapOf(
-        UnaryOperator.BANG  to (Type.BaseType.TypeBool to Type.BaseType.TypeBool),
+        UnaryOperator.BANG to (Type.BaseType.TypeBool to Type.BaseType.TypeBool),
         UnaryOperator.MINUS to (Type.BaseType.TypeInt to Type.BaseType.TypeInt),
-        UnaryOperator.LEN   to (Type.ArrayType(Type.AnyType) to Type.BaseType.TypeInt),
-        UnaryOperator.ORD   to (Type.BaseType.TypeChar to Type.BaseType.TypeInt),
-        UnaryOperator.CHR   to (Type.BaseType.TypeInt  to Type.BaseType.TypeChar)
+        UnaryOperator.LEN to (Type.ArrayType(Type.AnyType) to Type.BaseType.TypeInt),
+        UnaryOperator.ORD to (Type.BaseType.TypeChar to Type.BaseType.TypeInt),
+        UnaryOperator.CHR to (Type.BaseType.TypeInt to Type.BaseType.TypeChar)
 )
 
 internal val UnaryOperator.argType: Type
@@ -60,7 +60,7 @@ internal val UnaryOperator.returnType: Type
     get() = unaryOpTypes.getValue(this).second
 
 internal val BinaryOperator.argTypes: List<Type>
-    get() = when(this) {
+    get() = when (this) {
         BinaryOperator.MUL,
         BinaryOperator.DIV,
         BinaryOperator.MOD,
@@ -78,7 +78,7 @@ internal val BinaryOperator.argTypes: List<Type>
     }
 
 internal val BinaryOperator.returnType: Type
-    get() = when(this) {
+    get() = when (this) {
         BinaryOperator.MUL,
         BinaryOperator.DIV,
         BinaryOperator.MOD,
