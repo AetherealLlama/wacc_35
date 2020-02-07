@@ -58,7 +58,10 @@ expr: integer                                                                   
     | IDENT                                                                                        # IdExpr
     | arrayElem                                                                                    # ArrayElemExpr
     | op=(BANG | MINUS | LEN | ORD | CHR) expr                                                     # UnaryOpExpr
-    | expr op=(MUL | DIV | MOD | PLUS | MINUS | GT | GTE | LT | LTE | EQ | NEQ | LAND | LOR) expr  # BinaryOpExpr
+    | expr op=(MUL | DIV | MOD | PLUS | MINUS) expr                                                # BinaryOpExpr
+    | expr op=(PLUS | MINUS) expr                                                                  # BinaryOpExpr
+    | expr op=(GT | GTE | LT | LTE | EQ | NEQ) expr                                                # BinaryOpExpr
+    | expr op=(LAND | LOR) expr                                                                    # BinaryOpExpr
     | OPEN_PAREN expr CLOSE_PAREN                                                                  # ParensExpr
     ;
 
