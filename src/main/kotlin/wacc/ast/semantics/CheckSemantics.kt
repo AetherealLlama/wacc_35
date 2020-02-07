@@ -109,7 +109,13 @@ private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when
 private fun AssignLhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
     is AssignLhs.Variable -> checkIdent(name, ctx, pos)
     is AssignLhs.ArrayElem -> checkArrayElem(Expr.Ident(pos, name), exprs, ctx, pos)
-    is AssignLhs.PairElem -> expr.checkPairElem(ctx)(accessor)
+    is AssignLhs.PairElem -> {
+        val errors: Errors =
+                if (expr is Expr.Literal.PairLiteral) listOf(PairDereferenceNull(pos))
+                else emptyList()
+        val pairCheck = expr.checkPairElem(ctx)(accessor)
+        pairCheck.first to errors + pairCheck.second
+    }
 }
 
 private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
@@ -130,7 +136,13 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
                 ?: Type.AnyType to listOf(InvalidPairElemType(sndRawType, pos))
         Type.PairType(fstType, sndType) to listOf(fstErrors, sndErrors, fstTypeError, sndTypeError).flatten()
     }
-    is AssignRhs.PairElem -> expr.checkPairElem(ctx)(accessor)
+    is AssignRhs.PairElem -> {
+        val errors: Errors =
+                if (expr is Expr.Literal.PairLiteral) listOf(PairDereferenceNull(pos))
+                else emptyList()
+        val pairCheck = expr.checkPairElem(ctx)(accessor)
+        pairCheck.first to errors + pairCheck.second
+    }
     is AssignRhs.Call -> ctx.funcs.find { it.name == name }?.let { funcDef: Func ->
         val errors = emptyList<ProgramError>().toMutableList()
         if (funcDef.params.size != this.args.size)
@@ -163,9 +175,7 @@ private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Typ
                 PairAccessor.FST -> (exprType as Type.PairType).type1
                 PairAccessor.SND -> (exprType as Type.PairType).type2
             }.let { pairElemType -> pairElemType.asNormalType to exprErrors }
-        }
-    else
-        { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
+        } else { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
 }
 
 private fun checkArrayElem(

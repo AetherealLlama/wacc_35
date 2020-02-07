@@ -63,6 +63,10 @@ class FunctionRedefinition(val name: String, pos: FilePos) : SemanticError("func
         get() = "function `$name` has already been defined"
 }
 
+class PairDereferenceNull(pos: FilePos) : SemanticError("null access", pos) {
+    override val msg: String = "null cannot be dereferenced as a pair"
+}
+
 // <editor-fold desc="Type Errors">
 
 
