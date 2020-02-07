@@ -13,7 +13,11 @@ abstract class SemanticError(private val errName: String? = null, private val po
 
 class FunctionEndError(val name: String, pos: FilePos) : SemanticError("invalid syntax", pos) {
     override val msg: String
-        get() = "function `$name` must end with `exit` or `return`"
+        get() = "any execution path through function `$name` must end with `exit` or `return`"
+}
+
+class ProgramEndError(pos: FilePos) : SemanticError("invalid syntax", pos) {
+    override val msg = "any execution path through program must end with `exit`"
 }
 
 class IdentNotFoundError(val name: String, pos: FilePos) : SemanticError("identifier not found", pos) {

@@ -11,15 +11,8 @@ fun Program.checkSemantics(): Errors =
     funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
             stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
 
-private fun Func.checkSemantics(ctx: SemanticContext): Errors {
-    var lastStatementError = emptyList<SemanticError>()
-    var lastStat = stat
-    while (lastStat is Stat.Compose)
-        lastStat = lastStat.stat2
-    if (lastStat !is Stat.Exit && lastStat !is Stat.Compose)
-        lastStatementError = listOf(FunctionEndError(name, pos))
-    return stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second + lastStatementError
-}
+private fun Func.checkSemantics(ctx: SemanticContext): Errors =
+        stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
 
 private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = when(this) {
     is Stat.Skip -> ctx.currentScope to emptyList()
@@ -82,7 +75,7 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
         val (scope2, stat2Errors) = stat2.checkSemantics(ctx.withModifiedScope(scope1))
         scope2 to (stat1Errors + stat2Errors)
     }
-}
+}.let { (scope, errors) -> scope to errors + checkLastStatement(ctx) }
 
 private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when(this) {
     is Expr.Literal.IntLiteral -> Type.BaseType.TypeInt to emptyList()
@@ -171,5 +164,24 @@ private fun checkArrayElem(
 private fun checkIdent(name: String, ctx: SemanticContext, pos: FilePos): Pair<Type, Errors> =
     ctx.scopes.flatten().firstOrNull { it.first == name }?.let { it.second to emptyList<SemanticError>() }
             ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
+
+private fun Stat.checkLastStatement(ctx: SemanticContext): Errors = if (ctx.isLastStat) {
+    val getError = ctx.func?.let { { FunctionEndError(it.name, pos) } } ?: { ProgramEndError(pos) }
+    when(this) {
+        is Stat.Return -> ctx.func?.let { emptyList<SemanticError>() } ?: listOf(getError())
+        is Stat.IfThenElse,
+        is Stat.WhileDo,
+        is Stat.Begin,
+        is Stat.Compose,
+        is Stat.Exit -> emptyList()
+        is Stat.Skip,
+        is Stat.AssignNew,
+        is Stat.Assign,
+        is Stat.Read,
+        is Stat.Free,
+        is Stat.Print,
+        is Stat.Println -> listOf(getError())
+    }
+} else emptyList()
 
 // </editor-fold>
