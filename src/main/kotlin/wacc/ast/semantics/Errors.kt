@@ -3,22 +3,45 @@ package wacc.ast.semantics
 import wacc.ast.*
 import java.io.File
 
-abstract class SemanticError(private val errName: String? = null, private val pos: FilePos) {
+abstract class ProgramError(
+        private val isSemantic: Boolean,
+        private val errName: String,
+        private val pos: FilePos
+) {
     override fun toString(): String {
-        return "Error - $errName: $msg (at ${pos.line}:${pos.posInLine})"
+        return "${if (isSemantic) "Semantic" else "Syntax"} Error - $errName: $msg (at ${pos.line}:${pos.posInLine})"
     }
 
     abstract val msg: String
 }
 
-class FunctionEndError(val name: String, pos: FilePos) : SemanticError("invalid syntax", pos) {
+// <editor-fold desc="Syntax Errors">
+
+abstract class SyntaxError(errName: String, pos: FilePos) : ProgramError(true, errName, pos)
+
+class FunctionEndError(val name: String, pos: FilePos) : SyntaxError("invalid syntax", pos) {
     override val msg: String
         get() = "any execution path through function `$name` must end with `exit` or `return`"
 }
 
-class ProgramEndError(pos: FilePos) : SemanticError("invalid syntax", pos) {
+class ProgramEndError(pos: FilePos) : SyntaxError("invalid syntax", pos) {
     override val msg = "any execution path through program must end with `exit`"
 }
+
+class ReturnOutsideFuncError(pos: FilePos) : SyntaxError("return outside of function", pos) {
+    override val msg = "`return` cannot be used when outside a function"
+}
+
+class CallWrongNumberOfArguments(val given: Int, val needed: Int, val name: String, pos: FilePos) : SyntaxError("call with wrong number of arguments", pos) {
+    override val msg: String
+        get() = "function `$name` needs $needed arguments but was instead given $given"
+}
+
+// </editor-fold>
+
+// <editor-fold desc="Semantic Errors">
+
+abstract class SemanticError(errName: String, pos: FilePos) : ProgramError(true, errName, pos)
 
 class IdentNotFoundError(val name: String, pos: FilePos) : SemanticError("identifier not found", pos) {
     override val msg: String
@@ -30,14 +53,7 @@ class DuplicateDeclarationError(val name: String, pos: FilePos) : SemanticError(
         get() = "`$name` has already been declared"
 }
 
-class ReturnOutsideFuncError(pos: FilePos) : SemanticError("return outside of function", pos) {
-    override val msg = "`return` cannot be used when outside a function"
-}
-
-class CallWrongNumberOfArguments(val given: Int, val needed: Int, val name: String, pos: FilePos) : SemanticError("call with wrong number of arguments", pos) {
-    override val msg: String
-        get() = "function `$name` needs $needed arguments but was instead given $given"
-}
+// <editor-fold desc="Type Errors">
 
 
 abstract class TypeError(pos: FilePos) : SemanticError("type mismatch", pos)
@@ -87,3 +103,6 @@ class BinaryArgsMismatch(val t1: Type, val t2: Type, val func: BinaryOperator, p
         get() = "arguments of `$func` were `$t1` and `$t2`, but they should be the same type"
 }
 
+// </editor-fold>
+
+// </editor-fold>
