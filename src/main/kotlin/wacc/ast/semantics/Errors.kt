@@ -22,7 +22,7 @@ abstract class ProgramError(
 
 // <editor-fold desc="Syntax Errors">
 
-abstract class SyntaxError(errName: String, pos: FilePos) : ProgramError(true, errName, pos)
+abstract class SyntaxError(errName: String, pos: FilePos) : ProgramError(false, errName, pos)
 
 class FunctionEndError(val name: String, pos: FilePos) : SyntaxError("invalid syntax", pos) {
     override val msg: String
