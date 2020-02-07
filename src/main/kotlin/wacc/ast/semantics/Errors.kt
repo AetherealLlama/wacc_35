@@ -7,12 +7,18 @@ abstract class ProgramError(
         private val isSemantic: Boolean,
         private val errName: String,
         private val pos: FilePos
-) {
+) : Comparable<ProgramError> {
     override fun toString(): String {
         return "${if (isSemantic) "Semantic" else "Syntax"} Error - $errName: $msg (at ${pos.line}:${pos.posInLine})"
     }
 
     abstract val msg: String
+
+    override fun compareTo(other: ProgramError): Int {
+        if (!this.isSemantic && other.isSemantic) return -1
+        if (this.isSemantic && !other.isSemantic) return 1
+        return this.pos.compareTo(other.pos)
+    }
 }
 
 // <editor-fold desc="Syntax Errors">
