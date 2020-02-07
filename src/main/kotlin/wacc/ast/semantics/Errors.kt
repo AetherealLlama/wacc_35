@@ -1,9 +1,7 @@
 package wacc.ast.semantics
 
-import wacc.ast.BinaryOperator
-import wacc.ast.FilePos
-import wacc.ast.Type
-import wacc.ast.UnaryOperator
+import wacc.ast.*
+import java.io.File
 
 abstract class SemanticError(private val errName: String? = null, private val pos: FilePos) {
     override fun toString(): String {
@@ -28,6 +26,10 @@ class DuplicateDeclarationError(val name: String, pos: FilePos) : SemanticError(
         get() = "`$name` has already been declared"
 }
 
+class ReturnOutsideFuncError(pos: FilePos) : SemanticError("return outside of function", pos) {
+    override val msg = "`return` cannot be used when outside a function"
+}
+
 
 abstract class TypeError(pos: FilePos) : SemanticError("type mismatch", pos)
 
@@ -39,6 +41,16 @@ class TypeMismatch(val expected: Type, val actual: Type, pos: FilePos) : TypeErr
 class ReadTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "attempted to read to a `$actual` type"
+}
+
+class ReturnTypeMismatch(val f: Func, val actual: Type, pos: FilePos) : TypeError(pos) {
+    override val msg: String
+        get() = "Attempted to return a `$actual` from `${f.name}()`, which has type `${f.type}`"
+}
+
+class ExitTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
+    override val msg: String
+        get() = "tried to exit with a `$actual` instead of an integer"
 }
 
 class InvalidPairElemType(val actual: Type, pos: FilePos) : TypeError(pos) {
