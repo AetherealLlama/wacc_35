@@ -9,7 +9,7 @@ internal typealias Errors = List<SemanticError>
 
 fun Program.checkSemantics(): Errors =
     funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
-            stat.checkSemantics(SemanticContext(funcs, null, false)).second
+            stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
 
 private fun Func.checkSemantics(ctx: SemanticContext): Errors {
     var lastStatementError = emptyList<SemanticError>()
