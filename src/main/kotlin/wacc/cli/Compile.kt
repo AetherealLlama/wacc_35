@@ -9,7 +9,6 @@ import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
 import wacc.RETURN_CODE_SYNTACTIC_ERROR
 import wacc.SyntaxErrorListener
-import wacc.VERSION
 import wacc.ast.semantics.checkSemantics
 import wacc.cli.visitors.ProgramVisitor
 import wacc.utils.Logging
@@ -19,18 +18,18 @@ import java.io.FileInputStream
 import java.util.concurrent.Callable
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
-        mixinStandardHelpOptions = true, version = [VERSION])
+        mixinStandardHelpOptions = true, version = [wacc.VERSION])
 class Compile : Callable<Int>, Logging {
     private val logger = logger()
 
-    @Parameters(arity = "1..*", description = ["WACC program(s) to compile"])
-    private var files: Array<File>? = null
+    @Parameters(index="0", description = ["WACC program source to compile"])
+    private var files: File? = null
 
-    @Option(names = ["-d", "--debug"], description = ["Print debug information"])
-    private var debug = false
+    @Option(names = ["-s", "--semantic"], description = ["Perform semantic analysis"], negatable = true)
+    private var semantic = true
 
     override fun call(): Int {
-        val inputStream = FileInputStream(files!![0])
+        val inputStream = FileInputStream(files!!)
         val charStream = CharStreams.fromStream(inputStream)
         val lexer = WaccLexer(charStream)
         val tokens = CommonTokenStream(lexer)
@@ -42,7 +41,8 @@ class Compile : Callable<Int>, Logging {
         if (parser.numberOfSyntaxErrors > 0) {
             println("${parser.numberOfSyntaxErrors} syntax errors. Halting compilation.")
             return RETURN_CODE_SYNTACTIC_ERROR
-        }
+        } else if (semantic)
+            return RETURN_CODE_OK
 
         val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
