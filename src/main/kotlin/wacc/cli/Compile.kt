@@ -30,7 +30,6 @@ class Compile : Callable<Int>, Logging {
     private var debug = false
 
     override fun call(): Int {
-        logger.info("Debug mode is ${if (debug) "on" else "off"}")
         val inputStream = FileInputStream(files!![0])
         val charStream = CharStreams.fromStream(inputStream)
         val lexer = WaccLexer(charStream)
