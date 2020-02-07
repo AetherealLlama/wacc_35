@@ -34,6 +34,11 @@ class ReturnOutsideFuncError(pos: FilePos) : SemanticError("return outside of fu
     override val msg = "`return` cannot be used when outside a function"
 }
 
+class CallWrongNumberOfArguments(val given: Int, val needed: Int, val name: String, pos: FilePos) : SemanticError("call with wrong number of arguments", pos) {
+    override val msg: String
+        get() = "function `$name` needs $needed arguments but was instead given $given"
+}
+
 
 abstract class TypeError(pos: FilePos) : SemanticError("type mismatch", pos)
 

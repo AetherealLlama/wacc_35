@@ -129,8 +129,18 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         Type.PairType(fstType, sndType) to listOf(fstErrors, sndErrors, fstTypeError, sndTypeError).flatten()
     }
     is AssignRhs.PairElem -> expr.checkPairElem(ctx)(accessor)
-    is AssignRhs.Call -> ctx.funcs.find { it.name == name }?.let { it.type to emptyList<SemanticError>() }
-            ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
+    is AssignRhs.Call -> ctx.funcs.find { it.name == name }?.let { funcDef: Func ->
+        val errors = emptyList<SemanticError>().toMutableList()
+        if (funcDef.params.size != this.args.size)
+            errors.add(CallWrongNumberOfArguments(args.size, funcDef.params.size, funcDef.name, pos))
+        else
+            for (i in funcDef.params.zip(args)) {
+                val (argType, argError) = i.second.checkSemantics(ctx)
+                if (!(argType matches i.first.type))
+                    errors.add(TypeMismatch(i.first.type, argType, pos))
+            }
+        funcDef.type to errors
+    } ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
 }
 
 // <editor-fold desc="Common type checkers, to keep things dry">
