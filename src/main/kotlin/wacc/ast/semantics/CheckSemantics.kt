@@ -1,6 +1,7 @@
 package wacc.ast.semantics
 
 import wacc.ast.*
+import kotlin.math.pow
 
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>
@@ -80,7 +81,10 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
 }.let { (scope, errors) -> scope to errors + checkLastStatement(ctx) }
 
 private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
-    is Expr.Literal.IntLiteral -> Type.BaseType.TypeInt to emptyList()
+    is Expr.Literal.IntLiteral -> {
+        val errors: Errors = if (this.value > 2.0.pow(31.0) - 1) listOf(IntTooBig(value, pos)) else emptyList()
+        Type.BaseType.TypeInt to errors
+    }
     is Expr.Literal.BoolLiteral -> Type.BaseType.TypeBool to emptyList()
     is Expr.Literal.CharLiteral -> Type.BaseType.TypeChar to emptyList()
     is Expr.Literal.StringLiteral -> Type.BaseType.TypeString to emptyList()

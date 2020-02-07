@@ -42,6 +42,11 @@ class CallWrongNumberOfArguments(val given: Int, val needed: Int, val name: Stri
         get() = "function `$name` needs $needed arguments but was instead given $given"
 }
 
+class IntTooBig(val number: Long, val pos: FilePos) : SyntaxError("numeric value too large", pos) {
+    override val msg: String
+        get() = "the value $number is too large to be assigned"
+}
+
 // </editor-fold>
 
 // <editor-fold desc="Semantic Errors">
