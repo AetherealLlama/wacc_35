@@ -1,5 +1,7 @@
 package wacc.ast
 
+import wacc.ast.semantics.asNormalType
+
 sealed class Type {
     abstract val display: String
     override fun toString(): String = display
@@ -17,7 +19,7 @@ sealed class Type {
     }
     data class PairType(val type1: PairElemType, val type2: PairElemType) : Type() {
         override val display: String
-            get() = "(${(type1 as Type).display}, ${(type1 as Type).display})"
+            get() = "(${type1.asNormalType.display}, ${type1.asNormalType.display})"
 
     }
 

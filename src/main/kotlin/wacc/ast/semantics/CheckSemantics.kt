@@ -154,7 +154,7 @@ private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Typ
         { accessor -> when (accessor) {
             PairAccessor.FST -> (exprType as Type.PairType).type1
             PairAccessor.SND -> (exprType as Type.PairType).type2
-        }.let { pairElemType -> pairElemType.normalType to exprErrors } }
+        }.let { pairElemType -> pairElemType.asNormalType to exprErrors } }
     else
         { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
 }

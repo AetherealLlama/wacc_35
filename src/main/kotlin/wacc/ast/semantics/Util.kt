@@ -13,13 +13,13 @@ internal infix fun Type.matches(other: Type): Boolean {
     if (this is Type.AnyType || other is Type.AnyType) return true
     if (this is Type.ArrayType && other is Type.ArrayType) return this.type matches other.type
     if (this is Type.PairType && other is Type.PairType) {
-        return (this.type1.normalType matches other.type1.normalType)
-                && (this.type2.normalType matches other.type2.normalType)
+        return (this.type1.asNormalType matches other.type1.asNormalType)
+                && (this.type2.asNormalType matches other.type2.asNormalType)
     }
     return this.javaClass == other.javaClass
 }
 
-internal val Type.PairElemType.normalType: Type
+internal val Type.PairElemType.asNormalType: Type
     get() = if (this is Type.PairPairElem) ANY_PAIR else this as Type
 
 internal val Type.asPairElemType: Type.PairElemType?
