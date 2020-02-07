@@ -2,17 +2,19 @@ package wacc.ast.semantics
 
 import wacc.ast.*
 
-
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>
-
 
 fun Program.checkSemantics(): Errors =
         funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
                 stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
 
-private fun Func.checkSemantics(ctx: SemanticContext): Errors =
-        stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
+private fun Func.checkSemantics(ctx: SemanticContext): Errors {
+    var errors: Errors = emptyList()
+    if (ctx.funcs.filter { it.name == this.name }.size > 1)
+        errors += FunctionRedefinition(name, pos)
+    return errors + stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
+}
 
 private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = when (this) {
     is Stat.Skip -> ctx.currentScope to emptyList()

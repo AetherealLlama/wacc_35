@@ -1,7 +1,6 @@
 package wacc.ast.semantics
 
 import wacc.ast.*
-import java.io.File
 
 abstract class ProgramError(
         private val isSemantic: Boolean,
@@ -57,6 +56,11 @@ class IdentNotFoundError(val name: String, pos: FilePos) : SemanticError("identi
 class DuplicateDeclarationError(val name: String, pos: FilePos) : SemanticError("duplicate declaration", pos) {
     override val msg: String
         get() = "`$name` has already been declared"
+}
+
+class FunctionRedefinition(val name: String, pos: FilePos) : SemanticError("function redefinition", pos) {
+    override val msg: String
+        get() = "function `$name` has already been defined"
 }
 
 // <editor-fold desc="Type Errors">
