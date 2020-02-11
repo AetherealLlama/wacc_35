@@ -9,8 +9,8 @@ import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
 import wacc.RETURN_CODE_SYNTACTIC_ERROR
 import wacc.SyntaxErrorListener
-import wacc.ast.semantics.checkSemantics
-import wacc.cli.visitors.ProgramVisitor
+import wacc.checker.checkSemantics
+import wacc.ast.visitors.ProgramVisitor
 import wacc.utils.Logging
 import wacc.utils.logger
 import java.io.File

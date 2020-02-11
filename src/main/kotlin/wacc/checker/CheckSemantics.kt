@@ -1,4 +1,4 @@
-package wacc.ast.semantics
+package wacc.checker
 
 import wacc.ast.*
 import kotlin.math.pow

@@ -1,6 +1,6 @@
 package wacc.ast
 
-import wacc.ast.semantics.asNormalType
+import wacc.checker.asNormalType
 
 /**
  * The type of an AssignLhs, AssignRhs or an expression

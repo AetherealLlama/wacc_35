@@ -1,4 +1,4 @@
-package wacc.ast.semantics
+package wacc.checker
 
 import wacc.ast.BinaryOperator
 import wacc.ast.FilePos
