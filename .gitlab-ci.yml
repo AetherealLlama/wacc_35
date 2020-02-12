@@ -23,6 +23,8 @@ build:
   artifacts:
     paths:
       - build/libs/wacc-all.jar
+      - build/libs/wacc.jar
+    expire_in: 1 week
 
 test valid:
   stage: test
