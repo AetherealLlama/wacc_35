@@ -2,9 +2,7 @@ image: gradle:alpine
 
 stages:
   - build
-  - test-valid
-  - test-invalid-syntactic
-  - test-invalid-semantic
+  - test
 
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
@@ -22,9 +20,12 @@ build:
     paths:
       - build
       - .gradle
+  artifacts:
+    paths:
+      - build/libs/wacc-all.jar
 
 test valid:
-  stage: test-valid
+  stage: test
   script: gradle test -i --tests wacc.TestValidPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
@@ -34,7 +35,7 @@ test valid:
       - .gradle
 
 test syntactic:
-  stage: test-invalid-syntactic
+  stage: test
   script: gradle test -i --tests wacc.TestInvalidSyntacticPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
@@ -45,7 +46,7 @@ test syntactic:
 
 
 test semantic:
-  stage: test-invalid-semantic
+  stage: test
   script: gradle test -i --tests wacc.TestInvalidSemanticPrograms
   cache:
     key: "$CI_COMMIT_REF_NAME"
