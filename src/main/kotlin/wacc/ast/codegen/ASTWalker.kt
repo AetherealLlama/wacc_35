@@ -21,7 +21,6 @@ class ASTWalker {
 
     private fun Expr.Ident.toRegister(): Arg.Register = TODO()  // Use context to resolve identifier
 
-
     fun walk(program: Program): List<Instruction> =
             program.funcs.flatMap { walk(it).also { ctx = CodeGenContext() } } + walk(program.stat)
 

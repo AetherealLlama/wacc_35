@@ -14,5 +14,4 @@ sealed class Instruction {
   data class Multiply(val rd: Reg, val rm: Reg, val rs: Reg, val rn: Reg? = null) : Instruction()
   data class Or(val rd: Reg, val rn: Reg, val op2: Reg) : Instruction()
   data class Xor(val rd: Reg, val rn: Reg, val op2: Reg) : Instruction()
-
 }
