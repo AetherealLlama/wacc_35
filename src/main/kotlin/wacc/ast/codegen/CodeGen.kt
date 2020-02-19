@@ -4,6 +4,7 @@ import wacc.ast.Expr
 import wacc.ast.Program
 import wacc.ast.Func
 import wacc.ast.Stat
+import wacc.ast.codegen.types.Instruction
 
 fun Program.genCode(): List<Instruction> {
   return funcs.flatMap { it.genCode() } + stat.genCode()
