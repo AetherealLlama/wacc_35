@@ -1,7 +1,7 @@
 package wacc.checker
 
-import wacc.ast.*
 import kotlin.math.pow
+import wacc.ast.*
 
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>
@@ -173,8 +173,7 @@ private fun Expr.checkBool(ctx: SemanticContext): Errors {
 
 private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Type, Errors> {
     val (exprType, exprErrors) = checkSemantics(ctx)
-    return if (exprType matches ANY_PAIR)
-        { accessor ->
+    return if (exprType matches ANY_PAIR) { accessor ->
             when (accessor) {
                 PairAccessor.FST -> (exprType as Type.PairType).type1
                 PairAccessor.SND -> (exprType as Type.PairType).type2
@@ -183,7 +182,10 @@ private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Typ
 }
 
 private fun checkArrayElem(
-        name: Expr.Ident, exprs: Array<Expr>, ctx: SemanticContext, pos: FilePos
+    name: Expr.Ident,
+    exprs: Array<Expr>,
+    ctx: SemanticContext,
+    pos: FilePos
 ): Pair<Type, Errors> {
     val (arrayType, arrayErrors) = name.checkSemantics(ctx)
     val exprErrors = exprs.map { it.checkSemantics(ctx) }.flatMap { it.second }

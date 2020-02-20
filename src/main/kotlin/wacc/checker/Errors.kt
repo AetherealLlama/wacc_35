@@ -3,9 +3,9 @@ package wacc.checker
 import wacc.ast.*
 
 abstract class ProgramError(
-        val isSemantic: Boolean,
-        private val errName: String,
-        private val pos: FilePos
+    val isSemantic: Boolean,
+    private val errName: String,
+    private val pos: FilePos
 ) : Comparable<ProgramError> {
     override fun toString(): String {
         return "${if (isSemantic) "Semantic" else "Syntax"} Error - $errName: $msg (at ${pos.line}:${pos.posInLine})"
@@ -73,7 +73,6 @@ class CallWrongNumberOfArguments(val given: Int, val needed: Int, val name: Stri
 }
 
 // <editor-fold desc="Type Errors">
-
 
 abstract class TypeError(pos: FilePos) : SemanticError("type mismatch", pos)
 

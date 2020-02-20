@@ -1,11 +1,11 @@
 package wacc.ast.codegen
 
+import java.lang.IllegalStateException
 import wacc.ast.Expr
 import wacc.ast.Func
 import wacc.ast.Program
 import wacc.ast.Stat
 import wacc.ast.codegen.types.Instruction
-import java.lang.IllegalStateException
 
 sealed class Arg {
     data class Register(val register: Int) : Arg()
@@ -20,7 +20,7 @@ private class CodeGenContext
 class ASTWalker {
     private var ctx = CodeGenContext()
 
-    private fun Expr.Ident.toRegister(): Arg.Register = TODO()  // Use context to resolve identifier
+    private fun Expr.Ident.toRegister(): Arg.Register = TODO() // Use context to resolve identifier
 
     fun walk(program: Program): List<Instruction> =
             program.funcs.flatMap { walk(it).also { ctx = CodeGenContext() } } + walk(program.stat)
@@ -30,7 +30,7 @@ class ASTWalker {
         return walk(func.stat)
     }
 
-    fun walk(stat: Stat): List<Instruction> = when(stat) {
+    fun walk(stat: Stat): List<Instruction> = when (stat) {
         is Stat.Skip -> emptyList()
         is Stat.AssignNew -> TODO()
         is Stat.Assign -> TODO()
@@ -46,7 +46,7 @@ class ASTWalker {
         is Stat.Compose -> walk(stat.stat1) + walk(stat.stat2)
     }
 
-    fun walk(expr: Expr): Pair<Arg?, List<Instruction>> = when(expr) {
+    fun walk(expr: Expr): Pair<Arg?, List<Instruction>> = when (expr) {
         is Expr.Ident -> expr.toRegister() to emptyList()
         is Expr.Literal.IntLiteral -> Arg.Immediate(expr.value) to emptyList()
         is Expr.Literal.BoolLiteral -> Arg.Immediate(expr.value.asInt.toLong()) to emptyList()

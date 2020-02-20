@@ -1,8 +1,8 @@
 package wacc.utils
 
+import kotlin.reflect.full.companionObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
-import kotlin.reflect.full.companionObject
 
 interface Logging
 
