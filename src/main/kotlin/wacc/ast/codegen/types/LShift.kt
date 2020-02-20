@@ -1,6 +1,6 @@
 package wacc.ast.codegen.types
 
-enum class Shift {
+enum class LShift {
     LSL,
     LSR,
     ASR,
