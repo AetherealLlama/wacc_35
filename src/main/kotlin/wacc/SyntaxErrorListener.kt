@@ -16,6 +16,6 @@ class SyntaxErrorListener() : BaseErrorListener(), Logging {
         msg: String?,
         e: RecognitionException?
     ) {
-        this.logger().error("Syntax error at line $line:$charPositionInLine : $msg")
+        println("Syntax error at line $line:$charPositionInLine : $msg")
     }
 }
