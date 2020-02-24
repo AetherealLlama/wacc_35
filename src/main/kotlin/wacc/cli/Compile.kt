@@ -29,6 +29,9 @@ class Compile : Callable<Int>, Logging {
     @Option(names = ["-s", "--semantic"], description = ["Perform semantic analysis"], negatable = true)
     private var semantic = true
 
+    @Option(names = ["-t", "--stdout"], description = ["Print output to STDOUT"])
+    private var stdout = false
+
     override fun call(): Int {
         // Generate input from file
         val inputStream = FileInputStream(file!!)
@@ -65,9 +68,12 @@ class Compile : Callable<Int>, Logging {
             return RETURN_CODE_SEMANTIC_ERROR
 
         val programAsm = program.getAsm()
-        println(programAsm)
-//        val asmFile = File(file!!.nameWithoutExtension + ".S")
-//        asmFile.writeText(programAsm)
+        if (stdout) {
+            println(programAsm)
+        } else {
+            val asmFile = File(file!!.nameWithoutExtension + ".S")
+            asmFile.writeText(programAsm)
+        }
 
         return RETURN_CODE_OK
     }
