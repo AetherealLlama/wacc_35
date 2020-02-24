@@ -1,8 +1,8 @@
 package wacc.ast.visitors
 
 import WaccParserBaseVisitor
-import wacc.ast.Type
 import java.lang.IllegalStateException
+import wacc.ast.Type
 
 class TypeVisitor : WaccParserBaseVisitor<Type>() {
     private val pairElemTypeVisitor = PairElemTypeVisitor()

@@ -1,5 +1,6 @@
 package wacc.ast.visitors
 
+import WaccParser
 import WaccParserBaseVisitor
 import wacc.ast.*
 

@@ -5,16 +5,14 @@ import wacc.ast.FilePos
 import wacc.ast.Type
 import wacc.ast.UnaryOperator
 
-
 internal val ANY_PAIR = Type.PairType(Type.AnyType, Type.AnyType)
-
 
 internal infix fun Type.matches(other: Type): Boolean {
     if (this is Type.AnyType || other is Type.AnyType) return true
     if (this is Type.ArrayType && other is Type.ArrayType) return this.type matches other.type
     if (this is Type.PairType && other is Type.PairType) {
-        return (this.type1.asNormalType matches other.type1.asNormalType)
-                && (this.type2.asNormalType matches other.type2.asNormalType)
+        return (this.type1.asNormalType matches other.type1.asNormalType) &&
+                (this.type2.asNormalType matches other.type2.asNormalType)
     }
     return this.javaClass == other.javaClass
 }

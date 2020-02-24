@@ -1,5 +1,7 @@
 package wacc
 
+import java.nio.file.Files
+import java.nio.file.Paths
 import org.apache.commons.io.FilenameUtils
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.rules.ErrorCollector
@@ -7,9 +9,6 @@ import picocli.CommandLine
 import wacc.cli.Compile
 import wacc.utils.Logging
 import wacc.utils.logger
-import java.nio.file.Files
-import java.nio.file.Paths
-import kotlin.test.assertEquals
 
 class TestDirectory(path: String, private val returnCode: Int) : Logging {
     private val logger = logger()

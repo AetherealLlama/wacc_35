@@ -12,7 +12,7 @@ import org.antlr.v4.runtime.ParserRuleContext
 abstract class ASTNode(val pos: FilePos)
 
 /**
- * File position, representing the line number and postion in line used by all nodes
+ * File position, representing the line number and position in line used by all nodes
  */
 data class FilePos(val line: Int, val posInLine: Int) : Comparable<FilePos> {
     override fun compareTo(other: FilePos): Int =

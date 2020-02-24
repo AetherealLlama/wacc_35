@@ -1,11 +1,11 @@
 package wacc.ast.visitors
 
 import WaccParserBaseVisitor
+import java.lang.IllegalStateException
 import wacc.ast.*
 import wacc.ast.BinaryOperator
 import wacc.ast.Expr
 import wacc.ast.UnaryOperator
-import java.lang.IllegalStateException
 
 class ExprVisitor : WaccParserBaseVisitor<Expr>() {
     override fun visitInt(ctx: WaccParser.IntContext?): Expr {
@@ -21,7 +21,7 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
         if (ctx != null) {
             when (ctx.lit.type) {
                 WaccLexer.BOOLLITER ->
-                    return Expr.Literal.BoolLiteral(ctx.pos,ctx.lit.text == "true")
+                    return Expr.Literal.BoolLiteral(ctx.pos, ctx.lit.text == "true")
                 WaccLexer.CHARLITER -> return Expr.Literal.CharLiteral(ctx.pos, ctx.lit.text[0])
                 WaccLexer.STRLITER -> return Expr.Literal.StringLiteral(ctx.pos, ctx.lit.text)
                 WaccLexer.PAIRLITER -> return Expr.Literal.PairLiteral(ctx.pos)

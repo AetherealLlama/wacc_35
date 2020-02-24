@@ -10,6 +10,8 @@ plugins {
 
     // Apply Shadow plugin for fat jar creation
     id("com.github.johnrengelman.shadow") version "5.2.0"
+
+    id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
 }
 
 repositories {

@@ -3,10 +3,10 @@ package wacc.checker
 import wacc.ast.Func
 
 class SemanticContext(
-        val funcs: Array<Func>,
-        val func: Func?,
-        val isLastStat: Boolean,
-        val scopes: List<Scope> = emptyList()
+    val funcs: Array<Func>,
+    val func: Func?,
+    val isLastStat: Boolean,
+    val scopes: List<Scope> = emptyList()
 ) {
     fun withLastStat(isLastStat: Boolean): SemanticContext =
             SemanticContext(funcs, func, isLastStat, scopes)
