@@ -1,4 +1,4 @@
-package wacc
+package wacc.checker
 
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
