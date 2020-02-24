@@ -18,5 +18,7 @@ enum class Condition {
     SignedLess,
     SignedGreaterThan,
     SignedLessOrEqual,
-    Always
+    Always {
+        override fun toString(): String = ""
+    }
 }

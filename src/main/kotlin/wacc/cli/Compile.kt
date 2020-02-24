@@ -12,6 +12,7 @@ import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
 import wacc.RETURN_CODE_SYNTACTIC_ERROR
 import wacc.SyntaxErrorListener
+import wacc.ast.codegen.getAsm
 import wacc.ast.visitors.ProgramVisitor
 import wacc.checker.checkSemantics
 import wacc.utils.Logging
@@ -23,14 +24,14 @@ class Compile : Callable<Int>, Logging {
     private val logger = logger()
 
     @Parameters(index = "0", description = ["WACC program source to compile"])
-    private var files: File? = null
+    private var file: File? = null
 
     @Option(names = ["-s", "--semantic"], description = ["Perform semantic analysis"], negatable = true)
     private var semantic = true
 
     override fun call(): Int {
         // Generate input from file
-        val inputStream = FileInputStream(files!!)
+        val inputStream = FileInputStream(file!!)
         val charStream = CharStreams.fromStream(inputStream)
 
         // Lex and parse the input
@@ -58,10 +59,16 @@ class Compile : Callable<Int>, Logging {
         // Check for further syntax and semantic errors from the tree
         val errors = program.checkSemantics().reversed()
         errors.sorted().forEach(::println)
-        if (errors.filter { !it.isSemantic }.isNotEmpty())
+        if (errors.any { !it.isSemantic })
             return RETURN_CODE_SYNTACTIC_ERROR
-        if (errors.filter { it.isSemantic }.isNotEmpty())
+        if (errors.any { it.isSemantic })
             return RETURN_CODE_SEMANTIC_ERROR
+
+        val programAsm = program.getAsm()
+        println(programAsm)
+//        val asmFile = File(file!!.nameWithoutExtension + ".S")
+//        asmFile.writeText(programAsm)
+
         return RETURN_CODE_OK
     }
 }

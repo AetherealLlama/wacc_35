@@ -4,7 +4,6 @@ import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
 import wacc.utils.Logging
-import wacc.utils.logger
 
 // New ANTLR Error listener making use of the logger
 class SyntaxErrorListener() : BaseErrorListener(), Logging {
