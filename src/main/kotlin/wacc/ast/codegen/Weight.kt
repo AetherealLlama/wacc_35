@@ -12,11 +12,11 @@ val Stat.weight: Int
         is Stat.AssignNew -> rhs.weight + 1
         is Stat.Assign -> rhs.weight  // TODO: is this the case?
         is Stat.Read -> TODO()
-        is Stat.Free -> TODO()
-        is Stat.Return -> TODO()
-        is Stat.Exit -> TODO()
-        is Stat.Print -> TODO()
-        is Stat.Println -> TODO()
+        is Stat.Free -> expr.weight
+        is Stat.Return -> expr.weight
+        is Stat.Exit -> 0
+        is Stat.Print -> expr.weight
+        is Stat.Println -> expr.weight
         is Stat.IfThenElse -> listOf(expr.weight, branch1.weight, branch2.weight).max()!!
         is Stat.WhileDo -> TODO()
         is Stat.Begin -> stat.weight
