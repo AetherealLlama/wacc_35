@@ -34,10 +34,10 @@ val AssignRhs.weight: Int
 
 val Expr.weight: Int
     get() = when (this) {
-        is Expr.Literal.IntLiteral -> 0
-        is Expr.Literal.BoolLiteral -> 0
-        is Expr.Literal.CharLiteral -> 0
-        is Expr.Literal.StringLiteral -> 0  // TODO: is this the case?
+        is Expr.Literal.IntLiteral -> 1
+        is Expr.Literal.BoolLiteral -> 1
+        is Expr.Literal.CharLiteral -> 1
+        is Expr.Literal.StringLiteral -> 1  // TODO: is this the case?
         is Expr.Literal.PairLiteral -> TODO()
         is Expr.Ident -> TODO()
         is Expr.ArrayElem -> TODO()
