@@ -10,4 +10,5 @@ sealed class Operation {
     object AndOp : Operation()
     object OrOp : Operation()
     object XorOp : Operation()
+    object NegateOp : Operation()
 }
