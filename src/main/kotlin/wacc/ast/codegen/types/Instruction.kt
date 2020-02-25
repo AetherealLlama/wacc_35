@@ -11,20 +11,20 @@ sealed class Instruction {
 
     // TODO handle LDR pseudo-instruction for immediate values
     data class Load(
-            val access: MemoryAccess,
             val rd: Register,
             val rn: Register,
-            val offset: Operand,
-            val plus: Boolean,
+            val offset: Operand? = null,
+            val plus: Boolean = true,
+            val access: MemoryAccess = MemoryAccess.Word,
             val condition: Condition = Condition.Always
     ) : Instruction()
 
     data class Store(
-            val access: MemoryAccess,
             val rd: Register,
             val rn: Register,
-            val offset: Operand,
-            val plus: Boolean,
+            val offset: Operand? = null,
+            val plus: Boolean = true,
+            val access: MemoryAccess = MemoryAccess.Word,
             val condition: Condition = Condition.Always
     ) : Instruction()
 
