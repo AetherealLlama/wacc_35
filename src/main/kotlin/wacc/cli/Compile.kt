@@ -11,9 +11,9 @@ import picocli.CommandLine.*
 import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
 import wacc.RETURN_CODE_SYNTACTIC_ERROR
-import wacc.checker.SyntaxErrorListener
 import wacc.ast.codegen.getAsm
 import wacc.ast.visitors.ProgramVisitor
+import wacc.checker.SyntaxErrorListener
 import wacc.checker.checkSemantics
 import wacc.utils.Logging
 import wacc.utils.logger
