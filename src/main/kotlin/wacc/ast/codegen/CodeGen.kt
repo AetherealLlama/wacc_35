@@ -36,9 +36,9 @@ private fun Func.codeGen(): Function {
 private fun Stat.genMainFunc(): Function {
     // TODO remove hardcoded function
     return Function(Label("main"), listOf(
-            Push(Always, listOf(LinkRegister)),
-            Move(Always, GeneralRegister(0), Imm(0)),
-            Pop(Always, listOf(ProgramCounter)),
+            Push(listOf(LinkRegister)),
+            Move(GeneralRegister(0), Imm(0)),
+            Pop(listOf(ProgramCounter)),
             Special.Ltorg
     ), true)
 }
