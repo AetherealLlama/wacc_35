@@ -51,15 +51,16 @@ fun Program.getAsm(): String {
 }
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
-    val dataSection = Section.DataSection(emptyList())
-    val funcs = funcs.map(Func::codeGen).toMutableList()
-    funcs += stat.genMainFunc()
-    return Section.DataSection(emptyList()) to Section.TextSection(funcs)
+    TODO()
+//    val dataSection = Section.DataSection(emptyList())
+//    val funcs = funcs.map(Func::codeGen).toMutableList()
+//    funcs += stat.genMainFunc()
+//    return Section.DataSection(emptyList()) to Section.TextSection(funcs)
 }
 
-private fun Func.codeGen(): Function {
-    return Function(Label(name), emptyList(), false)
-}
+//private fun Func.codeGen(): Function {
+//    return Function(Label(name), emptyList(), false)
+//}
 
 private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenContext> = when (this) {
     is Stat.Skip -> emptyList<Instruction>() to ctx
@@ -134,15 +135,15 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     } ?: TODO()
 }
 
-private fun Stat.genMainFunc(): Function {
-    // TODO remove hardcoded function
-    return Function(Label("main"), listOf(
-            Push(listOf(LinkRegister)),
-            Move(GeneralRegister(0), Imm(0, INT)),
-            Pop(listOf(ProgramCounter)),
-            Special.Ltorg
-    ), true)
-}
+//private fun Stat.genMainFunc(): Function {
+//    // TODO remove hardcoded function
+//    return Function(Label("main"), listOf(
+//            Push(listOf(LinkRegister)),
+//            Move(GeneralRegister(0), Imm(0, INT)),
+//            Pop(listOf(ProgramCounter)),
+//            Special.Ltorg
+//    ), true)
+//}
 
 private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
         Compare(first, Operand.Reg(second)),

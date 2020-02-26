@@ -76,6 +76,10 @@ sealed class Instruction {
     ) : Instruction()
 
     sealed class Special : Instruction() {
+        data class Label(val name: String) : Special() {
+            override fun toString(): String = "$name:"
+        }
+
         object Ltorg : Special() {
             override fun toString(): String = ".ltorg"
         }
