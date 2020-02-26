@@ -1,16 +1,15 @@
 package wacc.ast.codegen
 
+import java.lang.IllegalStateException
 import wacc.ast.*
 import wacc.ast.BinaryOperator.*
 import wacc.ast.UnaryOperator.*
 import wacc.ast.codegen.types.*
 import wacc.ast.codegen.types.Condition.*
-import wacc.ast.codegen.types.Function
 import wacc.ast.codegen.types.ImmType.*
 import wacc.ast.codegen.types.Instruction.*
 import wacc.ast.codegen.types.Operand.Imm
 import wacc.ast.codegen.types.Register.*
-import java.lang.IllegalStateException
 
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 12
@@ -20,19 +19,19 @@ val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 private class GlobalCodeGenData(var labelCount: Int = 0, var strings: List<String>) {
     fun getLabel() = "L${labelCount++}"
 
-    fun getStringLabel(s: String) : String =
+    fun getStringLabel(s: String): String =
             strings.indexOfFirst { s == it }.let { if (it < 0) strings.size.also { strings += s } else it }
                     .let { "msg_$it" }
 }
 
 private class CodeGenContext(
-        val global: GlobalCodeGenData,
-        val func: Func?,
-        val vars: Map<String, Int>,
-        val availableRegs: List<Register> = usableRegs
+    val global: GlobalCodeGenData,
+    val func: Func?,
+    val vars: Map<String, Int>,
+    val availableRegs: List<Register> = usableRegs
 ) {
     fun resolveIdent(ident: String): Int? =
-            func?.params?.indexOfFirst { it.name == ident }?.let { if (it < 0) null else (it+1)*4 }
+            func?.params?.indexOfFirst { it.name == ident }?.let { if (it < 0) null else (it + 1) * 4 }
                     ?: vars[ident]
 
     fun withNewVar(name: String) = CodeGenContext(global, func, vars + (name to TODO()), availableRegs)
@@ -50,7 +49,6 @@ private class CodeGenContext(
     val dst: Register?
         get() = availableRegs.getOrNull(0)
 }
-
 
 fun Program.getAsm(): String {
     val (data, text) = genCode()
@@ -71,9 +69,9 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
 //    return Section.DataSection(emptyList()) to Section.TextSection(funcs)
 }
 
-//private fun Func.codeGen(): Function {
+// private fun Func.codeGen(): Function {
 //    return Function(Label(name), emptyList(), false)
-//}
+// }
 
 private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenContext> = when (this) {
     is Stat.Skip -> emptyList<Instruction>() to ctx
@@ -82,7 +80,7 @@ private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenCo
     } }
     is Stat.Assign -> rhs.genCode(ctx).let { rhsInstrs -> when (lhs) {
         is AssignLhs.Variable ->
-            (rhsInstrs + Store(ctx.dst!!, StackPointer,Imm(ctx.resolveIdent(lhs.name)!!, INT))) to ctx
+            (rhsInstrs + Store(ctx.dst!!, StackPointer, Imm(ctx.resolveIdent(lhs.name)!!, INT))) to ctx
         is AssignLhs.ArrayElem -> TODO()
         is AssignLhs.PairElem -> TODO()
     } }
@@ -93,27 +91,27 @@ private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenCo
     is Stat.Print -> TODO()
     is Stat.Println -> TODO()
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) -> (
-            emptyList<Instruction>()
-                    + expr.genCode(ctx)  // condition
-                    + Compare(ctx.dst!!, Imm(0, INT))
-                    + Branch(Operand.Label(label1), Equal)
-                    + branch2.genCode(ctx).first  // code if false
-                    + Branch(Operand.Label(label2))
-                    + Special.Label(label1)
-                    + branch1.genCode(ctx).first  // code if true
-                    + Special.Label(label2)
+            emptyList<Instruction>() +
+                    expr.genCode(ctx) + // condition
+                    Compare(ctx.dst!!, Imm(0, INT)) +
+                    Branch(Operand.Label(label1), Equal) +
+                    branch2.genCode(ctx).first + // code if false
+                    Branch(Operand.Label(label2)) +
+                    Special.Label(label1) +
+                    branch1.genCode(ctx).first + // code if true
+                    Special.Label(label2)
             ) to ctx }
     is Stat.WhileDo -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) -> (
-            emptyList<Instruction>()
-                    + Branch(Operand.Label(label1))
-                    + Special.Label(label2)
-                    + stat.genCode(ctx).first  // loop body
-                    + Special.Label(label1)
-                    + expr.genCode(ctx)  // loop condition
-                    + Compare(ctx.dst!!, Imm(1, INT))
-                    + Branch(Operand.Label(label1), Equal)
+            emptyList<Instruction>() +
+                    Branch(Operand.Label(label1)) +
+                    Special.Label(label2) +
+                    stat.genCode(ctx).first + // loop body
+                    Special.Label(label1) +
+                    expr.genCode(ctx) + // loop condition
+                    Compare(ctx.dst!!, Imm(1, INT)) +
+                    Branch(Operand.Label(label1), Equal)
             ) to ctx }
-    is Stat.Begin -> stat.genCode(ctx).first to ctx  // ignore context from inner scope
+    is Stat.Begin -> stat.genCode(ctx).first to ctx // ignore context from inner scope
     is Stat.Compose -> {
         val (instrsL, ctxL) = stat1.genCode(ctx)
         val (instrsR, ctxR) = stat2.genCode(ctxL)
@@ -130,7 +128,7 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
 }
 
 private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
-    is Expr.Literal.IntLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), INT)))  // TODO: int vs long?
+    is Expr.Literal.IntLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), INT))) // TODO: int vs long?
     is Expr.Literal.BoolLiteral -> listOf(Move(ctx.dst!!, Imm(if (value) 1 else 0, BOOL)))
     is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), CHAR)))
     is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
@@ -141,7 +139,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx.dst!!))
         MINUS -> expr.genCode(ctx) + Op(Operation.RevSubOp, ctx.dst!!, ctx.dst!!, Imm(0, INT))
         LEN -> TODO()
-        ORD, CHR -> expr.genCode(ctx)  // Chars and ints should be represented the same way; ignore conversion
+        ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
     }
     is Expr.BinaryOp -> ctx.take2Regs()?.let { (regs, ctx2) ->
         val (dst, nxt) = regs
@@ -167,7 +165,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     } ?: TODO()
 }
 
-//private fun Stat.genMainFunc(): Function {
+// private fun Stat.genMainFunc(): Function {
 //    // TODO remove hardcoded function
 //    return Function(Label("main"), listOf(
 //            Push(listOf(LinkRegister)),
@@ -175,7 +173,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
 //            Pop(listOf(ProgramCounter)),
 //            Special.Ltorg
 //    ), true)
-//}
+// }
 
 private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
         Compare(first, Operand.Reg(second)),

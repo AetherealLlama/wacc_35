@@ -1,16 +1,16 @@
 package wacc.ast.codegen
 
+import kotlin.math.max
+import kotlin.math.min
 import wacc.ast.AssignRhs
 import wacc.ast.Expr
 import wacc.ast.Stat
-import kotlin.math.max
-import kotlin.math.min
 
 val Stat.weight: Int
     get() = when (this) {
-        is Stat.Skip -> 0  // TODO: is this 0 or 1?
+        is Stat.Skip -> 0 // TODO: is this 0 or 1?
         is Stat.AssignNew -> rhs.weight + 1
-        is Stat.Assign -> rhs.weight  // TODO: is this the case?
+        is Stat.Assign -> rhs.weight // TODO: is this the case?
         is Stat.Read -> TODO()
         is Stat.Free -> expr.weight
         is Stat.Return -> expr.weight
@@ -41,9 +41,9 @@ val Expr.weight: Int
         is Expr.Literal.PairLiteral -> TODO()
         is Expr.Ident -> TODO()
         is Expr.ArrayElem -> TODO()
-        is Expr.UnaryOp -> expr.weight  // TODO: consider the case for each operator
+        is Expr.UnaryOp -> expr.weight // TODO: consider the case for each operator
         is Expr.BinaryOp -> combineWeights(expr1.weight, expr2.weight)
     }
 
-fun combineWeights(w1: Int, w2: Int): Int
-        = min(max(w1, w2+1), max(w1+1, w2))
+fun combineWeights(w1: Int, w2: Int): Int =
+        min(max(w1, w2 + 1), max(w1 + 1, w2))
