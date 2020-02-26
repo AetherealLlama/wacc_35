@@ -9,7 +9,26 @@ sealed class Instruction {
         val rn: Register,
         val operand: Operand,
         val condition: Condition = Condition.Always
-    ) : Instruction()
+    ) : Instruction() {
+        override fun toString(): String {
+            val builder = StringBuilder()
+            when (operation) {
+                is Operation.MulOp -> TODO()
+                is Operation.DivOp -> TODO()
+                else -> {
+                    builder.append("$operation ")
+                    when (operand) {
+                        is Operand.Imm -> {
+                            builder.append("$rd, $rn, #${operand.value}\n")
+                        }
+                        is Operand.Reg -> builder.append("$rd, $rn, ${operand.reg}\n")
+                        is Operand.Label -> throw IllegalStateException()
+                    }
+                }
+            }
+            return builder.toString()
+        }
+    }
 
     data class Load(
         val rd: Register,
@@ -23,7 +42,7 @@ sealed class Instruction {
             val builder = StringBuilder()
             builder.append("LDR$condition $rd, ")
             builder.append(when (op) {
-                is Operand.Imm -> "=${op.value}\n"  
+                is Operand.Imm -> "=${op.value}\n"
                 is Operand.Label -> "=${op.label}\n"
                 is Operand.Reg -> when (offset) {
                     is Operand.Reg -> "[${op.reg}, " + if (plus) "" else "-" + "${offset.reg}]\n"
@@ -80,12 +99,22 @@ sealed class Instruction {
     data class Branch(
         val operand: Operand,
         val condition: Condition = Condition.Always
-    ) : Instruction()
+    ) : Instruction() {
+        override fun toString(): String = when (operand) {
+            is Operand.Label -> "B$condition ${operand.label}\n"
+            else -> throw IllegalStateException()
+        }
+    }
 
     data class BranchLink(
         val operand: Operand,
         val condition: Condition = Condition.Always
-    ) : Instruction()
+    ) : Instruction() {
+        override fun toString(): String = when (operand) {
+            is Operand.Label -> "BL$condition ${operand.label}\n"
+            else -> throw IllegalStateException()
+        }
+    }
 
     data class Shift(
         val shift: LShift,
@@ -97,13 +126,15 @@ sealed class Instruction {
 
     sealed class Special : Instruction() {
         data class Label(val name: String) : Special() {
-            override fun toString(): String = "$name:"
+            override fun toString(): String = "$name:\n"
         }
 
         object Ltorg : Special() {
             override fun toString(): String = ".ltorg"
         }
 
-        data class Global(val label: String) : Special()
+        data class Global(val label: String) : Special() {
+            override fun toString(): String = ".global $label"
+        }
     }
 }
