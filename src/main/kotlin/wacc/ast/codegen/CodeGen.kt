@@ -17,22 +17,35 @@ private const val MAX_USABLE_REG = 12
 
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
-private class CodeGenContext(val func: Func?, val vars: Map<String, Int>, val availableRegs: List<Register> = usableRegs) {
+private class GlobalCodeGenData(var labelCount: Int = 0, var strings: List<String>) {
+    fun getLabel() = "L${labelCount++}"
+
+    fun getStringLabel(s: String) : String =
+            strings.indexOfFirst { s == it }.let { if (it < 0) strings.size.also { strings += s } else it }
+                    .let { "msg_$it" }
+}
+
+private class CodeGenContext(
+        val global: GlobalCodeGenData,
+        val func: Func?,
+        val vars: Map<String, Int>,
+        val availableRegs: List<Register> = usableRegs
+) {
     fun resolveIdent(ident: String): Int? =
             func?.params?.indexOfFirst { it.name == ident }?.let { if (it < 0) null else (it+1)*4 }
                     ?: vars[ident]
 
-    fun withNewVar(name: String) = CodeGenContext(func, vars + (name to TODO()), availableRegs)
+    fun withNewVar(name: String) = CodeGenContext(global, func, vars + (name to TODO()), availableRegs)
 
     fun takeReg(): Pair<Register, CodeGenContext>? =
             availableRegs.getOrNull(0)
-                    ?.let { it to CodeGenContext(func, vars, availableRegs.drop(1)) }
+                    ?.let { it to CodeGenContext(global, func, vars, availableRegs.drop(1)) }
 
     fun take2Regs(): Pair<Pair<Register, Register>, CodeGenContext>? =
             availableRegs.getOrNull(1)
-                    ?.let { (availableRegs[0] to it) to CodeGenContext(func, vars, availableRegs.drop(2)) }
+                    ?.let { (availableRegs[0] to it) to CodeGenContext(global, func, vars, availableRegs.drop(2)) }
 
-    fun withRegs(vararg regs: Register) = CodeGenContext(func, vars, regs.asList() + availableRegs)
+    fun withRegs(vararg regs: Register) = CodeGenContext(global, func, vars, regs.asList() + availableRegs)
 
     val dst: Register?
         get() = availableRegs.getOrNull(0)
@@ -79,9 +92,28 @@ private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenCo
     is Stat.Exit -> TODO()
     is Stat.Print -> TODO()
     is Stat.Println -> TODO()
-    is Stat.IfThenElse -> TODO()
-    is Stat.WhileDo -> TODO()
-    is Stat.Begin -> stat.genCode(ctx).let { (instrs, _) -> instrs to ctx }  // Ignore context from inner scope
+    is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) -> (
+            emptyList<Instruction>()
+                    + expr.genCode(ctx)  // condition
+                    + Compare(ctx.dst!!, Imm(0, INT))
+                    + Branch(Operand.Label(label1), Equal)
+                    + branch2.genCode(ctx).first  // code if false
+                    + Branch(Operand.Label(label2))
+                    + Special.Label(label1)
+                    + branch1.genCode(ctx).first  // code if true
+                    + Special.Label(label2)
+            ) to ctx }
+    is Stat.WhileDo -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) -> (
+            emptyList<Instruction>()
+                    + Branch(Operand.Label(label1))
+                    + Special.Label(label2)
+                    + stat.genCode(ctx).first  // loop body
+                    + Special.Label(label1)
+                    + expr.genCode(ctx)  // loop condition
+                    + Compare(ctx.dst!!, Imm(1, INT))
+                    + Branch(Operand.Label(label1), Equal)
+            ) to ctx }
+    is Stat.Begin -> stat.genCode(ctx).first to ctx  // ignore context from inner scope
     is Stat.Compose -> {
         val (instrsL, ctxL) = stat1.genCode(ctx)
         val (instrsR, ctxR) = stat2.genCode(ctxL)
@@ -101,7 +133,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Expr.Literal.IntLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), INT)))  // TODO: int vs long?
     is Expr.Literal.BoolLiteral -> listOf(Move(ctx.dst!!, Imm(if (value) 1 else 0, BOOL)))
     is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), CHAR)))
-    is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(TODO())))
+    is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
     is Expr.Literal.PairLiteral -> throw IllegalStateException()
     is Expr.Ident -> listOf(Load(ctx.dst!!, StackPointer, Imm(ctx.resolveIdent(name)!!, INT)))
     is Expr.ArrayElem -> TODO()
