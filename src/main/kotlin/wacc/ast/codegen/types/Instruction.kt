@@ -1,5 +1,7 @@
 package wacc.ast.codegen.types
 
+import java.lang.IllegalStateException
+
 sealed class Instruction {
     data class Op(
             val operation: Operation,
@@ -9,15 +11,34 @@ sealed class Instruction {
             val condition: Condition = Condition.Always
     ) : Instruction()
 
-    // TODO handle LDR pseudo-instruction for immediate values
     data class Load(
             val rd: Register,
-            val rn: Register,
+            val op: Operand,
             val offset: Operand? = null,
             val plus: Boolean = true,
             val access: MemoryAccess = MemoryAccess.Word,
             val condition: Condition = Condition.Always
-    ) : Instruction()
+    ) : Instruction() {
+        override fun toString(): String {
+            val builder = StringBuilder()
+            builder.append("LDR$condition $rd, ")
+            builder.append(when (op) {
+                is Operand.Imm -> "=${op.value}\n"
+                is Operand.Label -> "=${op.label}\n"
+                is Operand.Reg -> when (offset) {
+                    is Operand.Reg -> "[${op.reg}, " + if (plus) "" else "-" + "${offset.reg}]\n"
+                    is Operand.Imm ->
+                        if (offset.value == 0)
+                            "[${op.reg}]\n"
+                        else
+                            "[${op.reg}, #${offset.value}]\n"
+                    null -> "[${op.reg}]\n"
+                    is Operand.Label -> throw IllegalStateException()
+                }
+            })
+            return builder.toString()
+        }
+    }
 
     data class Store(
             val rd: Register,
@@ -55,7 +76,6 @@ sealed class Instruction {
     ) : Instruction() {
         override fun toString(): String = "POP$condition {${regs.joinToString()}}\n"
     }
-
 
     data class Branch(
             val operand: Operand,

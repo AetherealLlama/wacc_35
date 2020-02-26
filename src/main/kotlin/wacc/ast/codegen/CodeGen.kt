@@ -135,7 +135,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), CHAR)))
     is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
     is Expr.Literal.PairLiteral -> throw IllegalStateException()
-    is Expr.Ident -> listOf(Load(ctx.dst!!, StackPointer, Imm(ctx.resolveIdent(name)!!, INT)))
+    is Expr.Ident -> listOf(Load(ctx.dst!!, Operand.Reg(StackPointer), Imm(ctx.resolveIdent(name)!!, INT)))
     is Expr.ArrayElem -> TODO()
     is Expr.UnaryOp -> when (operator) {
         BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx.dst!!))
