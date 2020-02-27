@@ -73,7 +73,13 @@ sealed class Instruction {
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "MOV$condition $reg, $operand\n"
+        override fun toString(): String {
+            return "MOV$condition $reg, " + when (operand) {
+                is Operand.Imm -> "#${operand.value}\n"
+                is Operand.Reg -> "${operand.reg}\n"
+                is Operand.Label -> throw IllegalStateException()
+            }
+        }
     }
 
     data class Compare(
