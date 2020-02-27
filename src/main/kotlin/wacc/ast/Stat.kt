@@ -1,5 +1,7 @@
 package wacc.ast
 
+import wacc.ast.codegen.types.MemoryAccess
+
 /***
  * A statement AST Node
  *
@@ -8,9 +10,9 @@ package wacc.ast
  *
  * @property pos the position in the source of the start of the statement
  */
-sealed class Stat(pos: FilePos) : ASTNode(pos) {
+sealed class Stat(pos: FilePos, val vars: List<Pair<String, MemoryAccess>> = emptyList()) : ASTNode(pos) {
     class Skip(pos: FilePos) : Stat(pos)
-    class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos)
+    class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos, listOf(name to type.size))
     class Assign(pos: FilePos, val lhs: AssignLhs, val rhs: AssignRhs) : Stat(pos)
     class Read(pos: FilePos, val lhs: AssignLhs) : Stat(pos)
     class Free(pos: FilePos, val expr: Expr) : Stat(pos)
@@ -21,7 +23,7 @@ sealed class Stat(pos: FilePos) : ASTNode(pos) {
     class IfThenElse(pos: FilePos, val expr: Expr, val branch1: Stat, val branch2: Stat) : Stat(pos)
     class WhileDo(pos: FilePos, val expr: Expr, val stat: Stat) : Stat(pos)
     class Begin(pos: FilePos, val stat: Stat) : Stat(pos)
-    class Compose(pos: FilePos, val stat1: Stat, val stat2: Stat) : Stat(pos)
+    class Compose(pos: FilePos, val stat1: Stat, val stat2: Stat) : Stat(pos, stat1.vars + stat2.vars)
 }
 
 /**
@@ -103,3 +105,9 @@ enum class PairAccessor {
     FST,
     SND
 }
+
+val Type.size: MemoryAccess
+    get() = when (this) {
+        is Type.BaseType.TypeChar -> MemoryAccess.Byte
+        else -> MemoryAccess.Word
+    }
