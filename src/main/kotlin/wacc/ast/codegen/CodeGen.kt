@@ -112,7 +112,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     }
     is Stat.Read -> TODO()
     is Stat.Free -> TODO()
-    is Stat.Return -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!))
+    is Stat.Return -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + Pop(listOf(ProgramCounter))
     is Stat.Exit ->
         expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + BranchLink(Operand.Label("exit"))
     is Stat.Print -> TODO()
