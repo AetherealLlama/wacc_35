@@ -135,7 +135,22 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
             Load(innerCtx.dst!!, Imm(exprs.size, INT)) +
             Store(innerCtx.dst!!, arrayAddr)  // Store array length
     }
-    is AssignRhs.Newpair -> TODO()
+    is AssignRhs.Newpair -> {
+        var instrs = listOf(
+                Load(GeneralRegister(0), Imm(8, INT)),
+                BranchLink(Operand.Label("malloc")),
+                Move(ctx.dst!!, Operand.Reg(GeneralRegister(0)))
+        )
+        val (pairReg, ctx2) = ctx.takeReg()!!
+        listOf((expr1 to null), (expr2 to Imm(4, INT))).flatMap { (expr, offset) ->
+            expr.genCode(ctx2) +
+                    Load(GeneralRegister(0), Imm(4, INT)) +
+                    BranchLink(Operand.Label("malloc")) +
+                    Store(ctx2.dst!!, GeneralRegister(0)) +
+                    Store(GeneralRegister(0), pairReg, offset)
+        }
+        instrs
+    }
     is AssignRhs.PairElem -> TODO()
     is AssignRhs.Call -> TODO()
 }
