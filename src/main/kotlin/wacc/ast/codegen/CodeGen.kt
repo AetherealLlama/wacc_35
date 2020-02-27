@@ -19,12 +19,14 @@ since there shouldn't be anytime when registers are "reserved" from previous sta
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 12
 
+val R0 = GeneralRegister(0)
+
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
 private class GlobalCodeGenData(
-        var labelCount: Int = 0,
-        var strings: List<String>,
-        val program: Program
+    var labelCount: Int = 0,
+    var strings: List<String>,
+    val program: Program
 ) {
     fun getLabel() = "L${labelCount++}"
 
@@ -120,11 +122,11 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         }
     }
     is Stat.Read -> TODO()
-    is Stat.Free -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + ctx.branchBuiltin(freePair)
-    is Stat.Return -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + Pop(listOf(ProgramCounter))
+    is Stat.Free -> expr.genCode(ctx) + Move(R0, ctx.dst!!.op) + ctx.branchBuiltin(freePair)
+    is Stat.Return -> expr.genCode(ctx) + Move(R0, ctx.dst!!.op) + Pop(listOf(ProgramCounter))
     is Stat.Exit ->
-        expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + BranchLink(Operand.Label("exit"))
-    is Stat.Print -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + when (type) {
+        expr.genCode(ctx) + Move(R0, ctx.dst!!.op) + BranchLink(Operand.Label("exit"))
+    is Stat.Print -> expr.genCode(ctx) + Move(R0, ctx.dst!!.op) + when (type) {
         is Type.BaseType.TypeInt -> ctx.branchBuiltin(printInt)
         is Type.BaseType.TypeBool -> ctx.branchBuiltin(printBool)
         is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))
@@ -173,22 +175,22 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
             Store(innerCtx.dst!!, arrayAddr) // Store array length
     }
     is AssignRhs.Newpair -> listOf(
-            Load(GeneralRegister(0), Imm(8, INT)),
+            Load(R0, Imm(8, INT)),
             BranchLink(Operand.Label("malloc")),
-            Move(ctx.dst!!, Operand.Reg(GeneralRegister(0)))
+            Move(ctx.dst!!, R0.op)
     ) + ctx.takeReg()!!.let { (pairReg, ctx2) ->
         listOf((expr1 to null), (expr2 to Imm(4, INT))).flatMap { (expr, offset) ->
             expr.genCode(ctx2) +
-                    Load(GeneralRegister(0), Imm(4, INT)) +
+                    Load(R0, Imm(4, INT)) +
                     BranchLink(Operand.Label("malloc")) +
-                    Store(ctx2.dst!!, GeneralRegister(0)) +
-                    Store(GeneralRegister(0), pairReg, offset)
+                    Store(ctx2.dst!!, R0) +
+                    Store(R0, pairReg, offset)
         }
     }
     is AssignRhs.PairElem -> expr.genCode(ctx) +
-            Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) +
-            ctx.branchBuiltin(checkNullPointer) +  // Check that the pair isn't null
-            Load (ctx.dst!!, Operand.Reg(ctx.dst!!), if (accessor == PairAccessor.FST) null else Imm(4, INT))
+            Move(R0, ctx.dst!!.op) +
+            ctx.branchBuiltin(checkNullPointer) + // Check that the pair isn't null
+            Load(ctx.dst!!, ctx.dst!!.op, if (accessor == PairAccessor.FST) null else Imm(4, INT))
     is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
         var totalOffset = 0
         func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
@@ -208,24 +210,24 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), CHAR)))
     is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
     is Expr.Literal.PairLiteral -> throw IllegalStateException()
-    is Expr.Ident -> listOf(Load(ctx.dst!!, Operand.Reg(StackPointer), Imm(ctx.offsetOfIdent(name), INT)))
+    is Expr.Ident -> listOf(Load(ctx.dst!!, StackPointer.op, Imm(ctx.offsetOfIdent(name), INT)))
     is Expr.ArrayElem -> emptyList<Instruction>() +
             Op(Operation.AddOp, ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(name.name), INT)) +
             ctx.takeReg()!!.let { (_, ctx2) -> exprs.flatMap { expr ->
                 emptyList<Instruction>() +
-                        expr.genCode(ctx2) +  // evaluate array index
-                        Load(ctx.dst!!, Operand.Reg(ctx.dst!!)) +  // get address of array
-                        Move(GeneralRegister(0), Operand.Reg(ctx2.dst!!)) +
-                        Move(GeneralRegister(1), Operand.Reg(ctx.dst!!)) +
-                        ctx.branchBuiltin(checkArrayBounds) +  // check array bounds
+                        expr.genCode(ctx2) + // evaluate array index
+                        Load(ctx.dst!!, ctx.dst!!.op) + // get address of array
+                        Move(R0, ctx2.dst!!.op) +
+                        Move(GeneralRegister(1), ctx.dst!!.op) +
+                        ctx.branchBuiltin(checkArrayBounds) + // check array bounds
                         Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Imm(4, INT)) +
-                        Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx2.dst!!),
-                                BarrelShift(2, BarrelShift.Type.LSL))  // compute address of desired array elem
-            } } + Load(ctx.dst!!, Operand.Reg(ctx.dst!!))  // get array elem
+                        Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, ctx2.dst!!.op,
+                                BarrelShift(2, BarrelShift.Type.LSL)) // compute address of desired array elem
+            } } + Load(ctx.dst!!, ctx.dst!!.op) // get array elem
     is Expr.UnaryOp -> when (operator) {
-        BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx.dst!!))
+        BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst!!, ctx.dst!!, ctx.dst!!.op)
         MINUS -> expr.genCode(ctx) + Op(Operation.RevSubOp, ctx.dst!!, ctx.dst!!, Imm(0, INT))
-        LEN -> expr.genCode(ctx) + Load(ctx.dst!!, Operand.Reg(ctx.dst!!))
+        LEN -> expr.genCode(ctx) + Load(ctx.dst!!, ctx.dst!!.op)
         ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
     }
     is Expr.BinaryOp -> ctx.takeRegs(2)?.let { (regs, ctx2) ->
@@ -235,19 +237,19 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         } else {
             expr2.genCode(ctx2.withRegs(nxt, dst)) + expr2.genCode(ctx2.withRegs(dst))
         } + when (operator) {
-            MUL -> listOf(Op(Operation.MulOp, dst, dst, Operand.Reg(nxt)))
-            DIV -> listOf(Op(Operation.DivOp(), dst, dst, Operand.Reg(nxt)))
-            MOD -> listOf(Op(Operation.ModOp(), dst, dst, Operand.Reg(nxt)))
-            ADD -> listOf(Op(Operation.AddOp, dst, dst, Operand.Reg(nxt)))
-            SUB -> listOf(Op(Operation.SubOp, dst, dst, Operand.Reg(nxt)))
+            MUL -> listOf(Op(Operation.MulOp, dst, dst, nxt.op))
+            DIV -> listOf(Op(Operation.DivOp(), dst, dst, nxt.op))
+            MOD -> listOf(Op(Operation.ModOp(), dst, dst, nxt.op))
+            ADD -> listOf(Op(Operation.AddOp, dst, dst, nxt.op))
+            SUB -> listOf(Op(Operation.SubOp, dst, dst, nxt.op))
             GT -> regs.assignBool(SignedGreaterThan)
             GTE -> regs.assignBool(SignedGreaterOrEqual)
             LT -> regs.assignBool(SignedLess)
             LTE -> regs.assignBool(SignedLessOrEqual)
             EQ -> regs.assignBool(Equal)
             NEQ -> regs.assignBool(NotEqual)
-            LAND -> listOf(Op(Operation.AndOp, dst, dst, Operand.Reg(nxt)))
-            LOR -> listOf(Op(Operation.OrOp, dst, dst, Operand.Reg(nxt)))
+            LAND -> listOf(Op(Operation.AndOp, dst, dst, nxt.op))
+            LOR -> listOf(Op(Operation.OrOp, dst, dst, nxt.op))
         }
     } ?: TODO()
 }
@@ -256,14 +258,14 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
 //    // TODO remove hardcoded function
 //    return Function(Label("main"), listOf(
 //            Push(listOf(LinkRegister)),
-//            Move(GeneralRegister(0), Imm(0, INT)),
+//            Move(R0, Imm(0, INT)),
 //            Pop(listOf(ProgramCounter)),
 //            Special.Ltorg
 //    ), true)
 // }
 
 private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
-        Compare(first, Operand.Reg(second)),
+        Compare(first, second.op),
         Move(first, Imm(1, BOOL), cond),
         Move(first, Imm(0, BOOL), cond.inverse)
 )
@@ -271,9 +273,9 @@ private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
 private fun List<Register>.assignBool(cond: Condition) = let { (reg1, reg2) -> (reg1 to reg2).assignBool(cond) }
 
 private fun CodeGenContext.malloc(size: Int): List<Instruction> = listOf(
-        Load(GeneralRegister(0), Imm(size, INT)),
+        Load(R0, Imm(size, INT)),
         BranchLink(Operand.Label("malloc")),
-        Move(dst!!, Operand.Reg(GeneralRegister(0)))
+        Move(dst!!, R0.op)
 )
 
 private val Condition.inverse
@@ -321,3 +323,6 @@ val Func.label: String
 
 private fun CodeGenContext.branchBuiltin(f: BuiltinFunction): Instruction =
         BranchLink(Operand.Label(f.function.label.name)).also { global.usedBuiltins.add(f) }
+
+private val Register.op: Operand
+    get() = Operand.Reg(this)

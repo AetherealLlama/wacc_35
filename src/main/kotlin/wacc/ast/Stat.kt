@@ -1,7 +1,5 @@
 package wacc.ast
 
-import wacc.ast.codegen.types.MemoryAccess
-
 /***
  * A statement AST Node
  *
