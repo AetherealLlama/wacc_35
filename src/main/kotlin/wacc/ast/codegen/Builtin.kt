@@ -101,7 +101,7 @@ val throwOverflowError: BuiltinFunction = BuiltinFunction(Function(
 
 // </editor-fold>
 
-// <editor-fold desc="array checks">
+// <editor-fold desc="memory checks">
 
 val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\n"
 val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\n"
@@ -119,5 +119,17 @@ val checkArrayBounds: BuiltinFunction = BuiltinFunction(Function(
                 Pop(listOf(ProgramCounter))
         )
 ), listOf(throwRuntimeError) to listOf(negativeArrayIndexString, arrayIndexTooLargeString))
+
+val checkNullPointerString: BuiltinString = "__s_check_null_pointer" to "NullReferenceError: dereference a null reference\n"
+val checkNullPointer: BuiltinFunction = BuiltinFunction(Function(
+        Label("__f_check_null_pointer"),
+        listOf(
+                Push(listOf(LinkRegister)),
+                Compare(GeneralRegister(0), Imm(0)),
+                Load(GeneralRegister(0), Operand.Label(checkNullPointerString.first), condition = Condition.Equal),
+                BranchLink(Operand.Label(throwRuntimeError.function.label.name), condition = Condition.Equal),
+                Pop(listOf(ProgramCounter))
+        )
+), listOf(throwRuntimeError) to listOf(checkNullPointerString))
 
 // </editor-fold>
