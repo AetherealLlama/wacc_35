@@ -15,6 +15,8 @@ typealias BuiltinString = Pair<String, String> // Label to Value
 
 data class BuiltinFunction(val function: Function, val deps: BuiltinDependency)
 
+// <editor-fold desc="print functions">
+
 val printLnString: BuiltinString = "__s_print_ln" to ""
 val printLn: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_print_ln"),
@@ -60,6 +62,10 @@ val printInt: BuiltinFunction = BuiltinFunction(Function(
         )
 ), Pair(emptyList(), listOf(printIntString)))
 
+// </editor-fold>
+
+// <editor-fold desc="runtime errors">
+
 val throwRuntimeError: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_throw_runtime_error"),
         listOf(
@@ -78,6 +84,10 @@ val throwOverflowError: BuiltinFunction = BuiltinFunction(Function(
         )
 ), listOf(throwRuntimeError) to listOf(overflowErrorString))
 
+// </editor-fold>
+
+// <editor-fold desc="array checks">
+
 val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\n"
 val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\n"
 val checkArrayBounds: BuiltinFunction = BuiltinFunction(Function(
@@ -94,3 +104,5 @@ val checkArrayBounds: BuiltinFunction = BuiltinFunction(Function(
                 Pop(listOf(ProgramCounter))
         )
 ), listOf(throwRuntimeError) to listOf(negativeArrayIndexString, arrayIndexTooLargeString))
+
+// </editor-fold>
