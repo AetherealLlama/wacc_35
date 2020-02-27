@@ -191,8 +191,8 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
             expr2.genCode(ctx2.withRegs(nxt, dst)) + expr2.genCode(ctx2.withRegs(dst))
         } + when (operator) {
             MUL -> listOf(Op(Operation.MulOp, dst, dst, Operand.Reg(nxt)))
-            DIV -> listOf(Op(Operation.DivOp(TODO("Signed?")), dst, dst, Operand.Reg(nxt)))
-            MOD -> listOf(Op(Operation.ModOp(TODO("Signed?")), dst, dst, Operand.Reg(nxt)))
+            DIV -> listOf(Op(Operation.DivOp(), dst, dst, Operand.Reg(nxt)))
+            MOD -> listOf(Op(Operation.ModOp(), dst, dst, Operand.Reg(nxt)))
             ADD -> listOf(Op(Operation.AddOp, dst, dst, Operand.Reg(nxt)))
             SUB -> listOf(Op(Operation.SubOp, dst, dst, Operand.Reg(nxt)))
             GT -> regs.assignBool(SignedGreaterThan)
