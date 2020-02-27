@@ -125,15 +125,15 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Stat.Exit ->
         expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + BranchLink(Operand.Label("exit"))
     is Stat.Print -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + when (type) {
-        is Type.BaseType.TypeInt -> listOf(BranchLink(Operand.Label(printInt.function.label.name))).also { ctx.global.usedBuiltins.add(printInt) }
-        is Type.BaseType.TypeBool -> listOf(BranchLink(Operand.Label(printBool.function.label.name))).also { ctx.global.usedBuiltins.add(printBool) }
-        is Type.BaseType.TypeChar -> listOf(BranchLink(Operand.Label("putchar")))
-        is Type.BaseType.TypeString -> listOf(BranchLink(Operand.Label(printString.function.label.name))).also { ctx.global.usedBuiltins.add(printString) }
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(printInt)
+        is Type.BaseType.TypeBool -> ctx.branchBuiltin(printBool)
+        is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))
+        is Type.BaseType.TypeString -> ctx.branchBuiltin(printString)
         is Type.ArrayType -> when (type) {
-            is Type.BaseType.TypeChar -> listOf(BranchLink(Operand.Label(printString.function.label.name))).also { ctx.global.usedBuiltins.add(printString) }
-            else -> listOf(BranchLink(Operand.Label(printReference.function.label.name))).also { ctx.global.usedBuiltins.add(printReference) }
+            is Type.BaseType.TypeChar -> ctx.branchBuiltin(printString)
+            else -> ctx.branchBuiltin(printReference)
         }
-        is Type.PairType -> listOf(BranchLink(Operand.Label(printReference.function.label.name))).also { ctx.global.usedBuiltins.add(printReference) }
+        is Type.PairType -> ctx.branchBuiltin(printReference)
         else -> throw IllegalStateException()
     }
     is Stat.Println -> Stat.Print(pos, expr).genCode(ctx) + BranchLink(Operand.Label(printLn.function.label.name)).also { ctx.global.usedBuiltins.add(printLn) }
@@ -318,3 +318,6 @@ val Type.size: Int
 
 val Func.label: String
     get() = "f_$name"
+
+private fun CodeGenContext.branchBuiltin(f: BuiltinFunction): Instruction =
+        BranchLink(Operand.Label(f.function.label.name)).also { global.usedBuiltins.add(f) }
