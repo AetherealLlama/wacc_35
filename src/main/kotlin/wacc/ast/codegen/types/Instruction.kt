@@ -86,7 +86,15 @@ sealed class Instruction {
         val reg: Register,
         val operand: Operand,
         val condition: Condition = Condition.Always
-    ) : Instruction()
+    ) : Instruction() {
+        override fun toString(): String {
+            return "CMP$condition $reg, " + when (operand) {
+                is Operand.Imm -> "#${operand.value}\n"
+                is Operand.Reg -> "${operand.reg}\n"
+                is Operand.Label -> throw IllegalStateException()
+            }
+        }
+    }
 
     data class Push(
         val regs: List<Register>,
