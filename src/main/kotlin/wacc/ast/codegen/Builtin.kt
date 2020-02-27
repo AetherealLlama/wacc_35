@@ -101,7 +101,7 @@ val throwOverflowError: BuiltinFunction = BuiltinFunction(Function(
 
 // </editor-fold>
 
-// <editor-fold desc="memory checks">
+// <editor-fold desc="memory stuff">
 
 val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\n"
 val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\n"
@@ -131,5 +131,25 @@ val checkNullPointer: BuiltinFunction = BuiltinFunction(Function(
                 Pop(listOf(ProgramCounter))
         )
 ), listOf(throwRuntimeError) to listOf(checkNullPointerString))
+
+val nullPointerDereferenceString: BuiltinString = "__s_null_pointer_deref" to "NullReferenceError: dereference a null reference\n"
+val freePair: BuiltinFunction = BuiltinFunction(Function(
+        Label("__f_free_pair"),
+        listOf(
+                Push(listOf(LinkRegister)),
+                Compare(GeneralRegister(0), Imm(0)),
+                Load(GeneralRegister(0), Operand.Label(nullPointerDereferenceString.first), condition = Condition.Equal),
+                Branch(Operand.Label(throwRuntimeError.function.label.name), condition = Condition.Equal),
+                Push(listOf(GeneralRegister(0))),
+                Load(GeneralRegister(0), Reg(GeneralRegister(0))),
+                BranchLink(Operand.Label("free")),
+                Load(GeneralRegister(0), Reg(StackPointer)),
+                Load(GeneralRegister(0), Reg(StackPointer), Imm(4)),
+                BranchLink(Operand.Label("free")),
+                Pop(listOf(GeneralRegister(0))),
+                BranchLink(Operand.Label("free")),
+                Pop(listOf(ProgramCounter))
+        )
+), listOf(throwRuntimeError) to listOf(nullPointerDereferenceString))
 
 // </editor-fold>
