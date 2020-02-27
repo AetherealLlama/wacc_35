@@ -73,12 +73,10 @@ sealed class Instruction {
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String {
-            return "MOV$condition $reg, " + when (operand) {
-                is Operand.Imm -> "#${operand.value}\n"
-                is Operand.Reg -> "${operand.reg}\n"
-                is Operand.Label -> throw IllegalStateException()
-            }
+        override fun toString(): String = "MOV$condition $reg, " + when (operand) {
+            is Operand.Imm -> "#${operand.value}\n"
+            is Operand.Reg -> "${operand.reg}\n"
+            is Operand.Label -> throw IllegalStateException()
         }
     }
 
@@ -87,12 +85,10 @@ sealed class Instruction {
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String {
-            return "CMP$condition $reg, " + when (operand) {
-                is Operand.Imm -> "#${operand.value}\n"
-                is Operand.Reg -> "${operand.reg}\n"
-                is Operand.Label -> throw IllegalStateException()
-            }
+        override fun toString(): String = "CMP$condition $reg, " + when (operand) {
+            is Operand.Imm -> "#${operand.value}\n"
+            is Operand.Reg -> "${operand.reg}\n"
+            is Operand.Label -> throw IllegalStateException()
         }
     }
 

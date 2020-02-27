@@ -62,6 +62,21 @@ val printInt: BuiltinFunction = BuiltinFunction(Function(
         )
 ), Pair(emptyList(), listOf(printIntString)))
 
+val printReferenceString: BuiltinString = "__s_print_reference" to "%p"
+val printReference: BuiltinFunction = BuiltinFunction(Function(
+        Label("__f_print_reference"),
+        listOf(
+                Push(listOf(LinkRegister)),
+                Move(GeneralRegister(1), Reg(GeneralRegister(0))),
+                Load(GeneralRegister(0), Operand.Label(printReferenceString.first)),
+                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                BranchLink(Operand.Label("printf")),
+                Move(GeneralRegister(0), Imm(0)),
+                BranchLink(Operand.Label("fflush")),
+                Pop(listOf(ProgramCounter))
+        )
+), Pair(emptyList(), listOf(printReferenceString)))
+
 // </editor-fold>
 
 // <editor-fold desc="runtime errors">
