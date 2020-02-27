@@ -112,11 +112,11 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
 private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Stat.Skip -> emptyList()
     is Stat.AssignNew -> rhs.genCode(ctx).let { rhsInstrs ->
-        rhsInstrs + Store(ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(name), INT))
+        rhsInstrs + Store(ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(name)))
     }
     is Stat.Assign -> rhs.genCode(ctx).let { rhsInstrs ->
         when (lhs) {
-            is AssignLhs.Variable -> rhsInstrs + Store(ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(lhs.name), INT))
+            is AssignLhs.Variable -> rhsInstrs + Store(ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)))
             is AssignLhs.ArrayElem -> TODO()
             is AssignLhs.PairElem -> TODO()
         }
@@ -142,7 +142,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
         emptyList<Instruction>() +
                 expr.genCode(ctx) + // condition
-                Compare(ctx.dst!!, Imm(0, INT)) +
+                Compare(ctx.dst!!, Imm(0)) +
                 Branch(Operand.Label(label1), Equal) +
                 branch2.genCode(ctx) + // code if false
                 Branch(Operand.Label(label2)) +
@@ -157,7 +157,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
                 stat.genCodeWithNewScope(ctx) + // loop body
                 Special.Label(label1) +
                 expr.genCode(ctx) + // loop condition
-                Compare(ctx.dst!!, Imm(1, INT)) +
+                Compare(ctx.dst!!, Imm(1)) +
                 Branch(Operand.Label(label1), Equal)
     }
     is Stat.Begin -> stat.genCodeWithNewScope(ctx) // ignore context from inner scope
@@ -169,19 +169,19 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
     is AssignRhs.ArrayLiteral -> ctx.takeReg()!!.let { (arrayAddr, innerCtx) -> emptyList<Instruction>() +
             ctx.malloc((exprs.size + 1) * 4) + // Allocate array
             exprs.mapIndexed { i, expr ->
-                expr.genCode(innerCtx) + Store(innerCtx.dst!!, arrayAddr, Imm((i + 1) * 4, INT))
+                expr.genCode(innerCtx) + Store(innerCtx.dst!!, arrayAddr, Imm((i + 1) * 4))
             }.flatten() + // Store array values
-            Load(innerCtx.dst!!, Imm(exprs.size, INT)) +
+            Load(innerCtx.dst!!, Imm(exprs.size)) +
             Store(innerCtx.dst!!, arrayAddr) // Store array length
     }
     is AssignRhs.Newpair -> listOf(
-            Load(R0, Imm(8, INT)),
+            Load(R0, Imm(8)),
             BranchLink(Operand.Label("malloc")),
             Move(ctx.dst!!, R0.op)
     ) + ctx.takeReg()!!.let { (pairReg, ctx2) ->
-        listOf((expr1 to null), (expr2 to Imm(4, INT))).flatMap { (expr, offset) ->
+        listOf((expr1 to null), (expr2 to Imm(4))).flatMap { (expr, offset) ->
             expr.genCode(ctx2) +
-                    Load(R0, Imm(4, INT)) +
+                    Load(R0, Imm(4)) +
                     BranchLink(Operand.Label("malloc")) +
                     Store(ctx2.dst!!, R0) +
                     Store(R0, pairReg, offset)
@@ -190,29 +190,29 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
     is AssignRhs.PairElem -> expr.genCode(ctx) +
             Move(R0, ctx.dst!!.op) +
             ctx.branchBuiltin(checkNullPointer) + // Check that the pair isn't null
-            Load(ctx.dst!!, ctx.dst!!.op, if (accessor == PairAccessor.FST) null else Imm(4, INT))
+            Load(ctx.dst!!, ctx.dst!!.op, if (accessor == PairAccessor.FST) null else Imm(4))
     is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
         var totalOffset = 0
         func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
             expr.genCode(ctx.withStackOffset(totalOffset)) +
-                    Store(ctx.dst!!, StackPointer, Imm(type.size, INT), plus = false, moveReg = true).also {
+                    Store(ctx.dst!!, StackPointer, Imm(type.size), plus = false, moveReg = true).also {
                         totalOffset += type.size
                     } +
                     BranchLink(Operand.Label(func.label)) +
-                    Op(Operation.AddOp, StackPointer, StackPointer, Imm(totalOffset, INT))
+                    Op(Operation.AddOp, StackPointer, StackPointer, Imm(totalOffset))
         }
     }
 }
 
 private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
-    is Expr.Literal.IntLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), INT))) // TODO: int vs long?
+    is Expr.Literal.IntLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt()))) // TODO: int vs long?
     is Expr.Literal.BoolLiteral -> listOf(Move(ctx.dst!!, Imm(if (value) 1 else 0, BOOL)))
     is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), CHAR)))
     is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
     is Expr.Literal.PairLiteral -> throw IllegalStateException()
-    is Expr.Ident -> listOf(Load(ctx.dst!!, StackPointer.op, Imm(ctx.offsetOfIdent(name), INT)))
+    is Expr.Ident -> listOf(Load(ctx.dst!!, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
     is Expr.ArrayElem -> emptyList<Instruction>() +
-            Op(Operation.AddOp, ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(name.name), INT)) +
+            Op(Operation.AddOp, ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(name.name))) +
             ctx.takeReg()!!.let { (_, ctx2) -> exprs.flatMap { expr ->
                 emptyList<Instruction>() +
                         expr.genCode(ctx2) + // evaluate array index
@@ -220,13 +220,13 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
                         Move(R0, ctx2.dst!!.op) +
                         Move(GeneralRegister(1), ctx.dst!!.op) +
                         ctx.branchBuiltin(checkArrayBounds) + // check array bounds
-                        Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Imm(4, INT)) +
+                        Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Imm(4)) +
                         Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, ctx2.dst!!.op,
                                 BarrelShift(2, BarrelShift.Type.LSL)) // compute address of desired array elem
             } } + Load(ctx.dst!!, ctx.dst!!.op) // get array elem
     is Expr.UnaryOp -> when (operator) {
         BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst!!, ctx.dst!!, ctx.dst!!.op)
-        MINUS -> expr.genCode(ctx) + Op(Operation.RevSubOp, ctx.dst!!, ctx.dst!!, Imm(0, INT))
+        MINUS -> expr.genCode(ctx) + Op(Operation.RevSubOp, ctx.dst!!, ctx.dst!!, Imm(0))
         LEN -> expr.genCode(ctx) + Load(ctx.dst!!, ctx.dst!!.op)
         ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
     }
@@ -258,7 +258,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
 //    // TODO remove hardcoded function
 //    return Function(Label("main"), listOf(
 //            Push(listOf(LinkRegister)),
-//            Move(R0, Imm(0, INT)),
+//            Move(R0, Imm(0)),
 //            Pop(listOf(ProgramCounter)),
 //            Special.Ltorg
 //    ), true)
@@ -273,7 +273,7 @@ private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
 private fun List<Register>.assignBool(cond: Condition) = let { (reg1, reg2) -> (reg1 to reg2).assignBool(cond) }
 
 private fun CodeGenContext.malloc(size: Int): List<Instruction> = listOf(
-        Load(R0, Imm(size, INT)),
+        Load(R0, Imm(size)),
         BranchLink(Operand.Label("malloc")),
         Move(dst!!, R0.op)
 )
