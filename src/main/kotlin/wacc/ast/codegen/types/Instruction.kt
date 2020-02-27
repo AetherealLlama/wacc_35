@@ -61,6 +61,13 @@ sealed class Instruction {
         }
     }
 
+    data class LongMul(
+            val rdLo: Register,
+            val rdHi: Register,
+            val rm: Register,
+            val rs: Register
+    ) : Instruction()
+
     data class Store(
         val rd: Register,
         val rn: Register,
@@ -86,6 +93,7 @@ sealed class Instruction {
     data class Compare(
         val reg: Register,
         val operand: Operand,
+        val shift: BarrelShift? = null,
         val condition: Condition = Condition.Always
     ) : Instruction() {
         override fun toString(): String = "CMP$condition $reg, " + when (operand) {
@@ -154,6 +162,7 @@ sealed class Instruction {
 
 data class BarrelShift(val amount: Int, val type: Type) {
     enum class Type {
-        LSL
+        LSL,
+        ASR
     }
 }

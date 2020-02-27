@@ -237,7 +237,10 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         } else {
             expr2.genCode(ctx2.withRegs(nxt, dst)) + expr2.genCode(ctx2.withRegs(dst))
         } + when (operator) {
-            MUL -> listOf(Op(Operation.MulOp, dst, dst, nxt.op))
+            MUL -> emptyList<Instruction>() +
+                    LongMul(dst, nxt, dst, nxt) +
+                    Compare(nxt, dst.op, BarrelShift(31, BarrelShift.Type.ASR)) +
+                    ctx.branchBuiltin(throwOverflowError, Always)
             DIV -> listOf(Op(Operation.DivOp(), dst, dst, nxt.op))
             MOD -> listOf(Op(Operation.ModOp(), dst, dst, nxt.op))
             ADD -> listOf(Op(Operation.AddOp, dst, dst, nxt.op))
@@ -321,8 +324,8 @@ val Type.size: Int
 val Func.label: String
     get() = "f_$name"
 
-private fun CodeGenContext.branchBuiltin(f: BuiltinFunction): Instruction =
-        BranchLink(Operand.Label(f.function.label.name)).also { global.usedBuiltins.add(f) }
+private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = Condition.Always): Instruction =
+        BranchLink(Operand.Label(f.function.label.name), condition = ).also { global.usedBuiltins.add(f) }
 
 private val Register.op: Operand
     get() = Operand.Reg(this)
