@@ -18,12 +18,13 @@ sealed class Stat(pos: FilePos, val vars: List<Pair<String, MemoryAccess>> = emp
     class Free(pos: FilePos, val expr: Expr) : Stat(pos)
     class Return(pos: FilePos, val expr: Expr) : Stat(pos)
     class Exit(pos: FilePos, val expr: Expr) : Stat(pos)
-    class Print(pos: FilePos, val expr: Expr) : Stat(pos)
-    class Println(pos: FilePos, val expr: Expr) : Stat(pos)
     class IfThenElse(pos: FilePos, val expr: Expr, val branch1: Stat, val branch2: Stat) : Stat(pos)
     class WhileDo(pos: FilePos, val expr: Expr, val stat: Stat) : Stat(pos)
     class Begin(pos: FilePos, val stat: Stat) : Stat(pos)
     class Compose(pos: FilePos, val stat1: Stat, val stat2: Stat) : Stat(pos, stat1.vars + stat2.vars)
+
+    class Print(pos: FilePos, val expr: Expr) : Stat(pos) { lateinit var type: Type }
+    class Println(pos: FilePos, val expr: Expr) : Stat(pos) { lateinit var type: Type }
 }
 
 /**
