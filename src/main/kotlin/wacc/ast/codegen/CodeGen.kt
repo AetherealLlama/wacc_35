@@ -187,7 +187,7 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
     }
     is AssignRhs.PairElem -> expr.genCode(ctx) +
             Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) +
-            (TODO("Call builtin `p_check_null_pointer`") as List<Instruction>) +
+            ctx.branchBuiltin(checkNullPointer) +  // Check that the pair isn't null
             Load (ctx.dst!!, Operand.Reg(ctx.dst!!), if (accessor == PairAccessor.FST) null else Imm(4, INT))
     is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
         var totalOffset = 0
@@ -217,7 +217,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
                         Load(ctx.dst!!, Operand.Reg(ctx.dst!!)) +  // get address of array
                         Move(GeneralRegister(0), Operand.Reg(ctx2.dst!!)) +
                         Move(GeneralRegister(1), Operand.Reg(ctx.dst!!)) +
-                        (TODO("Call builtin `p_check_array_bounds`") as List<Instruction>) +  // check array bounds
+                        ctx.branchBuiltin(checkArrayBounds) +  // check array bounds
                         Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Imm(4, INT)) +
                         Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx2.dst!!),
                                 BarrelShift(2, BarrelShift.Type.LSL))  // compute address of desired array elem
