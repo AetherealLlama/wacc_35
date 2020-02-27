@@ -21,7 +21,11 @@ private const val MAX_USABLE_REG = 12
 
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
-private class GlobalCodeGenData(var labelCount: Int = 0, var strings: List<String>) {
+private class GlobalCodeGenData(
+        var labelCount: Int = 0,
+        var strings: List<String>,
+        val program: Program
+) {
     fun getLabel() = "L${labelCount++}"
 
     val usedBuiltins: MutableSet<BuiltinFunction> = mutableSetOf()
@@ -34,11 +38,12 @@ private class GlobalCodeGenData(var labelCount: Int = 0, var strings: List<Strin
 private class CodeGenContext(
     val global: GlobalCodeGenData,
     val func: Func?,
-    val scopes: List<List<Pair<String, MemoryAccess>>>,
+    val stackOffset: Int,
+    val scopes: List<List<Pair<String, Type>>>,
     val availableRegs: List<Register> = usableRegs
 ) {
     fun offsetOfIdent(ident: String): Int {
-        var offset = 0
+        var offset = stackOffset
         var found = false
         for (scope in scopes) {
             for (varData in scope) {
@@ -55,22 +60,25 @@ private class CodeGenContext(
         return offset
     }
 
-    fun takeReg(newScope: List<Pair<String, MemoryAccess>>? = null): Pair<Register, CodeGenContext>? =
+    fun takeReg(): Pair<Register, CodeGenContext>? =
             availableRegs.getOrNull(0)?.let { reg ->
-                reg to CodeGenContext(global, func, newScope?.let { listOf(it) + scopes } ?: scopes, availableRegs.drop(1))
+                reg to CodeGenContext(global, func, stackOffset, scopes, availableRegs.drop(1))
             }
 
-    fun withNewScope(newScope: List<Pair<String, MemoryAccess>>): CodeGenContext =
-            CodeGenContext(global, func, listOf(newScope) + scopes, availableRegs)
+    fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext =
+            CodeGenContext(global, func, stackOffset, listOf(newScope) + scopes, availableRegs)
 
     fun takeRegs(n: Int): Pair<List<Register>, CodeGenContext>? =
             if (availableRegs.size < n)
                 null
             else
-                availableRegs.take(n) to CodeGenContext(global, func, scopes, availableRegs.drop(n))
+                availableRegs.take(n) to CodeGenContext(global, func, stackOffset, scopes, availableRegs.drop(n))
 
     fun withRegs(vararg regs: Register) =
-            CodeGenContext(global, func, scopes, regs.asList() + availableRegs)
+            CodeGenContext(global, func, stackOffset, scopes, regs.asList() + availableRegs)
+
+    fun withStackOffset(offset: Int) =
+            CodeGenContext(global, func, offset, scopes, availableRegs)
 
     val dst: Register?
         get() = availableRegs.getOrNull(0)
@@ -177,8 +185,21 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
                     Store(GeneralRegister(0), pairReg, offset)
         }
     }
-    is AssignRhs.PairElem -> TODO()
-    is AssignRhs.Call -> TODO()
+    is AssignRhs.PairElem -> expr.genCode(ctx) +
+            Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) +
+            (TODO("Call builtin `p_check_null_pointer`") as List<Instruction>) +
+            Load (ctx.dst!!, Operand.Reg(ctx.dst!!), if (accessor == PairAccessor.FST) null else Imm(4, INT))
+    is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
+        var totalOffset = 0
+        func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
+            expr.genCode(ctx.withStackOffset(totalOffset)) +
+                    Store(ctx.dst!!, StackPointer, Imm(type.size, INT), plus = false, moveReg = true).also {
+                        totalOffset += type.size
+                    } +
+                    BranchLink(Operand.Label(func.label)) +
+                    Op(Operation.AddOp, StackPointer, StackPointer, Imm(totalOffset, INT))
+        }
+    }
 }
 
 private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
@@ -188,11 +209,23 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
     is Expr.Literal.PairLiteral -> throw IllegalStateException()
     is Expr.Ident -> listOf(Load(ctx.dst!!, Operand.Reg(StackPointer), Imm(ctx.offsetOfIdent(name), INT)))
-    is Expr.ArrayElem -> TODO()
+    is Expr.ArrayElem -> emptyList<Instruction>() +
+            Op(Operation.AddOp, ctx.dst!!, StackPointer, Imm(ctx.offsetOfIdent(name.name), INT)) +
+            ctx.takeReg()!!.let { (_, ctx2) -> exprs.flatMap { expr ->
+                emptyList<Instruction>() +
+                        expr.genCode(ctx2) +  // evaluate array index
+                        Load(ctx.dst!!, Operand.Reg(ctx.dst!!)) +  // get address of array
+                        Move(GeneralRegister(0), Operand.Reg(ctx2.dst!!)) +
+                        Move(GeneralRegister(1), Operand.Reg(ctx.dst!!)) +
+                        (TODO("Call builtin `p_check_array_bounds`") as List<Instruction>) +  // check array bounds
+                        Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Imm(4, INT)) +
+                        Op(Operation.AddOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx2.dst!!),
+                                BarrelShift(2, BarrelShift.Type.LSL))  // compute address of desired array elem
+            } } + Load(ctx.dst!!, Operand.Reg(ctx.dst!!))  // get array elem
     is Expr.UnaryOp -> when (operator) {
         BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst!!, ctx.dst!!, Operand.Reg(ctx.dst!!))
         MINUS -> expr.genCode(ctx) + Op(Operation.RevSubOp, ctx.dst!!, ctx.dst!!, Imm(0, INT))
-        LEN -> TODO()
+        LEN -> expr.genCode(ctx) + Load(ctx.dst!!, Operand.Reg(ctx.dst!!))
         ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
     }
     is Expr.BinaryOp -> ctx.takeRegs(2)?.let { (regs, ctx2) ->
@@ -264,14 +297,7 @@ private val Condition.inverse
         Always -> throw IllegalStateException()
     }
 
-val MemoryAccess.size: Int
-    get() = when (this) {
-        MemoryAccess.Byte -> 1
-        MemoryAccess.HalfWord -> 2
-        MemoryAccess.Word -> 4
-    }
-
-private val List<Pair<String, MemoryAccess>>.offset: Int
+private val List<Pair<String, Type>>.offset: Int
     get() = sumBy { it.second.size }
 
 // Generates code for a statement, with instructions to adjust the stack pointer to account for the new scope
@@ -283,3 +309,12 @@ private fun Stat.genCodeWithNewScope(ctx: CodeGenContext): List<Instruction> {
             genCode(ctx.withNewScope(vars)) +
             if (vars.isEmpty()) emptyList() else listOf(post)
 }
+
+val Type.size: Int
+    get() = when (this) {
+        is Type.BaseType.TypeChar -> 1
+        else -> 4
+    }
+
+val Func.label: String
+    get() = "f_$name"

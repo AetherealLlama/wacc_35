@@ -8,6 +8,7 @@ sealed class Instruction {
         val rd: Register,
         val rn: Register,
         val operand: Operand,
+        val shift: BarrelShift? = null,
         val condition: Condition = Condition.Always
     ) : Instruction() {
         override fun toString(): String {
@@ -25,6 +26,7 @@ sealed class Instruction {
                         is Operand.Label -> throw IllegalStateException()
                     }
                 }
+                // TODO: barrel shifter
             }
             return builder.toString()
         }
@@ -64,6 +66,7 @@ sealed class Instruction {
         val rn: Register,
         val offset: Operand? = null,
         val plus: Boolean = true,
+        val moveReg: Boolean = false,
         val access: MemoryAccess = MemoryAccess.Word,
         val condition: Condition = Condition.Always
     ) : Instruction()
@@ -146,5 +149,11 @@ sealed class Instruction {
         data class Global(val label: String) : Special() {
             override fun toString(): String = ".global $label"
         }
+    }
+}
+
+data class BarrelShift(val amount: Int, val type: Type) {
+    enum class Type {
+        LSL
     }
 }

@@ -10,9 +10,9 @@ import wacc.ast.codegen.types.MemoryAccess
  *
  * @property pos the position in the source of the start of the statement
  */
-sealed class Stat(pos: FilePos, val vars: List<Pair<String, MemoryAccess>> = emptyList()) : ASTNode(pos) {
+sealed class Stat(pos: FilePos, val vars: List<Pair<String, Type>> = emptyList()) : ASTNode(pos) {
     class Skip(pos: FilePos) : Stat(pos)
-    class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos, listOf(name to type.size))
+    class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos, listOf(name to type))
     class Assign(pos: FilePos, val lhs: AssignLhs, val rhs: AssignRhs) : Stat(pos)
     class Read(pos: FilePos, val lhs: AssignLhs) : Stat(pos)
     class Free(pos: FilePos, val expr: Expr) : Stat(pos)
@@ -106,9 +106,3 @@ enum class PairAccessor {
     FST,
     SND
 }
-
-val Type.size: MemoryAccess
-    get() = when (this) {
-        is Type.BaseType.TypeChar -> MemoryAccess.Byte
-        else -> MemoryAccess.Word
-    }
