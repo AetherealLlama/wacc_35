@@ -11,6 +11,11 @@ import wacc.ast.codegen.types.Instruction.*
 import wacc.ast.codegen.types.Operand.Imm
 import wacc.ast.codegen.types.Register.*
 
+/*
+We don't need to worry about register vs. stack allocation when dealing with Stat and AssignRhs
+since there shouldn't be anytime when registers are "reserved" from previous statements.
+ */
+
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 12
 
@@ -87,7 +92,8 @@ private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenCo
     is Stat.Read -> TODO()
     is Stat.Free -> TODO()
     is Stat.Return -> (expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!))) to ctx
-    is Stat.Exit -> TODO()
+    is Stat.Exit ->
+        (expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + Pop(listOf(ProgramCounter))) to ctx
     is Stat.Print -> TODO()
     is Stat.Println -> TODO()
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) -> (
@@ -121,7 +127,14 @@ private fun Stat.genCode(ctx: CodeGenContext): Pair<List<Instruction>, CodeGenCo
 
 private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is AssignRhs.Expression -> expr.genCode(ctx)
-    is AssignRhs.ArrayLiteral -> TODO()
+    is AssignRhs.ArrayLiteral -> ctx.takeReg()!!.let { (arrayAddr, innerCtx) -> emptyList<Instruction>() +
+            ctx.malloc((exprs.size + 1) * 4) +  // Allocate array
+            exprs.mapIndexed { i, expr ->
+                expr.genCode(innerCtx) + Store(innerCtx.dst!!, arrayAddr, Imm((i + 1) * 4, INT))
+            }.flatten() +  // Store array values
+            Load(innerCtx.dst!!, Imm(exprs.size, INT)) +
+            Store(innerCtx.dst!!, arrayAddr)  // Store array length
+    }
     is AssignRhs.Newpair -> TODO()
     is AssignRhs.PairElem -> TODO()
     is AssignRhs.Call -> TODO()
@@ -179,6 +192,12 @@ private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
         Compare(first, Operand.Reg(second)),
         Move(first, Imm(1, BOOL), cond),
         Move(first, Imm(0, BOOL), cond.inverse)
+)
+
+private fun CodeGenContext.malloc(size: Int): List<Instruction> = listOf(
+        Load(GeneralRegister(0), Imm(size, INT)),
+        BranchLink(Operand.Label("malloc")),
+        Move(dst!!, Operand.Reg(GeneralRegister(0)))
 )
 
 private val Condition.inverse
