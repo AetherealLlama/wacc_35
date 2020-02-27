@@ -114,7 +114,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Stat.Free -> TODO()
     is Stat.Return -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!))
     is Stat.Exit ->
-        expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + Pop(listOf(ProgramCounter))
+        expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + BranchLink(Operand.Label("exit"))
     is Stat.Print -> TODO()
     is Stat.Println -> TODO()
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
