@@ -205,7 +205,9 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
 }
 
 private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
-    is Expr.Literal.IntLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt()))) // TODO: int vs long?
+    is Expr.Literal.IntLiteral ->
+        if (value in 0..255) listOf(Move(ctx.dst!!, Imm(value.toInt())))
+        else listOf(Load(ctx.dst!!, Imm(value.toInt())))
     is Expr.Literal.BoolLiteral -> listOf(Move(ctx.dst!!, Imm(if (value) 1 else 0, BOOL)))
     is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst!!, Imm(value.toInt(), CHAR)))
     is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst!!, Operand.Label(ctx.global.getStringLabel(value))))
