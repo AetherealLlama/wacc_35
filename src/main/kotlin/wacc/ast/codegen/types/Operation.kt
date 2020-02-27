@@ -17,8 +17,8 @@ sealed class Operation {
         override fun toString(): String = "MUL"
     }
 
-    data class DivOp(val signed: Boolean) : Operation()
-    data class ModOp(val signed: Boolean) : Operation()
+    data class DivOp(val signed: Boolean = true) : Operation()
+    data class ModOp(val signed: Boolean = true) : Operation()
 
     object AndOp : Operation() {
         override fun toString(): String {
