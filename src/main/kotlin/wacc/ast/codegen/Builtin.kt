@@ -77,6 +77,23 @@ val printReference: BuiltinFunction = BuiltinFunction(Function(
         )
 ), Pair(emptyList(), listOf(printReferenceString)))
 
+val printBoolTrueString: BuiltinString = "__s_print_bool_true" to "true"
+val printBoolFalseString: BuiltinString = "__s_print_bool_false" to "false"
+val printBool: BuiltinFunction = BuiltinFunction(Function(
+        Label("__f_print_bool"),
+        listOf(
+                Push(listOf(LinkRegister)),
+                Compare(GeneralRegister(0), Imm(0)),
+                Load(GeneralRegister(0), Operand.Label(printBoolTrueString.first), condition = Condition.NotEqual),
+                Load(GeneralRegister(0), Operand.Label(printBoolFalseString.first), condition = Condition.Equal),
+                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                BranchLink(Operand.Label("printf")),
+                Move(GeneralRegister(0), Imm(0)),
+                BranchLink(Operand.Label("fflush")),
+                Pop(listOf(ProgramCounter))
+        )
+), Pair(emptyList(), listOf(printBoolTrueString, printBoolFalseString)))
+
 // </editor-fold>
 
 // <editor-fold desc="runtime errors">

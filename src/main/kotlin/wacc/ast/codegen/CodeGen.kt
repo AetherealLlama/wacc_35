@@ -24,6 +24,8 @@ val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 private class GlobalCodeGenData(var labelCount: Int = 0, var strings: List<String>) {
     fun getLabel() = "L${labelCount++}"
 
+    val usedBuiltins: MutableSet<BuiltinFunction> = mutableSetOf()
+
     fun getStringLabel(s: String): String =
             strings.indexOfFirst { s == it }.let { if (it < 0) strings.size.also { strings += s } else it }
                     .let { "msg_$it" }
@@ -47,7 +49,6 @@ private class CodeGenContext(
             }
             if (found)
                 break
-
         }
         if (!found)
             throw IllegalStateException()
@@ -115,8 +116,19 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Stat.Return -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + Pop(listOf(ProgramCounter))
     is Stat.Exit ->
         expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + BranchLink(Operand.Label("exit"))
-    is Stat.Print -> TODO()
-    is Stat.Println -> TODO()
+    is Stat.Print -> expr.genCode(ctx) + Move(GeneralRegister(0), Operand.Reg(ctx.dst!!)) + when (type) {
+        is Type.BaseType.TypeInt -> listOf(BranchLink(Operand.Label(printInt.function.label.name))).also { ctx.global.usedBuiltins.add(printInt) }
+        is Type.BaseType.TypeBool -> listOf(BranchLink(Operand.Label(printBool.function.label.name))).also { ctx.global.usedBuiltins.add(printBool) }
+        is Type.BaseType.TypeChar -> listOf(BranchLink(Operand.Label("putchar")))
+        is Type.BaseType.TypeString -> listOf(BranchLink(Operand.Label(printString.function.label.name))).also { ctx.global.usedBuiltins.add(printString) }
+        is Type.ArrayType -> when (type) {
+            is Type.BaseType.TypeChar -> listOf(BranchLink(Operand.Label(printString.function.label.name))).also { ctx.global.usedBuiltins.add(printString) }
+            else -> listOf(BranchLink(Operand.Label(printReference.function.label.name))).also { ctx.global.usedBuiltins.add(printReference) }
+        }
+        is Type.PairType -> listOf(BranchLink(Operand.Label(printReference.function.label.name))).also { ctx.global.usedBuiltins.add(printReference) }
+        else -> throw IllegalStateException()
+    }
+    is Stat.Println -> Stat.Print(pos, expr).genCode(ctx) + BranchLink(Operand.Label(printLn.function.label.name)).also { ctx.global.usedBuiltins.add(printLn) }
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
         emptyList<Instruction>() +
                 expr.genCode(ctx) + // condition
@@ -145,12 +157,12 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
 private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is AssignRhs.Expression -> expr.genCode(ctx)
     is AssignRhs.ArrayLiteral -> ctx.takeReg()!!.let { (arrayAddr, innerCtx) -> emptyList<Instruction>() +
-            ctx.malloc((exprs.size + 1) * 4) +  // Allocate array
+            ctx.malloc((exprs.size + 1) * 4) + // Allocate array
             exprs.mapIndexed { i, expr ->
                 expr.genCode(innerCtx) + Store(innerCtx.dst!!, arrayAddr, Imm((i + 1) * 4, INT))
-            }.flatten() +  // Store array values
+            }.flatten() + // Store array values
             Load(innerCtx.dst!!, Imm(exprs.size, INT)) +
-            Store(innerCtx.dst!!, arrayAddr)  // Store array length
+            Store(innerCtx.dst!!, arrayAddr) // Store array length
     }
     is AssignRhs.Newpair -> listOf(
             Load(GeneralRegister(0), Imm(8, INT)),
