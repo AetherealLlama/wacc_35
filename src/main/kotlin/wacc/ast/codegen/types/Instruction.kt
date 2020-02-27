@@ -62,10 +62,10 @@ sealed class Instruction {
     }
 
     data class LongMul(
-            val rdLo: Register,
-            val rdHi: Register,
-            val rm: Register,
-            val rs: Register
+        val rdLo: Register,
+        val rdHi: Register,
+        val rm: Register,
+        val rs: Register
     ) : Instruction()
 
     data class Store(

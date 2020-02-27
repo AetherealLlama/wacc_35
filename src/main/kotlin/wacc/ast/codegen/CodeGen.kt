@@ -19,8 +19,6 @@ since there shouldn't be anytime when registers are "reserved" from previous sta
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 12
 
-val R0 = GeneralRegister(0)
-
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
 private class GlobalCodeGenData(
@@ -326,8 +324,8 @@ val Type.size: Int
 val Func.label: String
     get() = "f_$name"
 
-private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = Condition.Always): Instruction =
-        BranchLink(Operand.Label(f.function.label.name), condition = ).also { global.usedBuiltins.add(f) }
+private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = Always): Instruction =
+        BranchLink(Operand.Label(f.function.label.name), condition = cond).also { global.usedBuiltins.add(f) }
 
 private val Register.op: Operand
     get() = Operand.Reg(this)

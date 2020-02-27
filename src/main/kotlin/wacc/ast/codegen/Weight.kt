@@ -2,10 +2,7 @@ package wacc.ast.codegen
 
 import kotlin.math.max
 import kotlin.math.min
-import wacc.ast.AssignRhs
 import wacc.ast.Expr
-import wacc.ast.Stat
-
 
 val Expr.weight: Int
     get() = when (this) {
@@ -15,7 +12,7 @@ val Expr.weight: Int
         is Expr.Literal.StringLiteral -> 1
         is Expr.Literal.PairLiteral -> 1
         is Expr.Ident -> 1
-        is Expr.ArrayElem -> (exprs.map {it.weight}.max() ?: 0) + 1
+        is Expr.ArrayElem -> (exprs.map { it.weight }.max() ?: 0) + 1
         is Expr.UnaryOp -> expr.weight
         is Expr.BinaryOp -> combineWeights(expr1.weight, expr2.weight)
     }
