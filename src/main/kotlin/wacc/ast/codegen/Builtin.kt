@@ -143,7 +143,7 @@ val throwRuntimeError: BuiltinFunction = BuiltinFunction(Function(
         )
 ), Pair(listOf(printString), emptyList()))
 
-val overflowErrorString: BuiltinString = "__s_overflow_error" to "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n"
+val overflowErrorString: BuiltinString = "__s_overflow_error" to "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n"
 val throwOverflowError: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_throw_overflow_error"),
         listOf(
@@ -156,8 +156,8 @@ val throwOverflowError: BuiltinFunction = BuiltinFunction(Function(
 
 // <editor-fold desc="memory stuff">
 
-val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\n"
-val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\n"
+val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\\n"
+val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\\n"
 val checkArrayBounds: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_check_array_bounds"),
         listOf(
@@ -173,7 +173,7 @@ val checkArrayBounds: BuiltinFunction = BuiltinFunction(Function(
         )
 ), listOf(throwRuntimeError) to listOf(negativeArrayIndexString, arrayIndexTooLargeString))
 
-val checkNullPointerString: BuiltinString = "__s_check_null_pointer" to "NullReferenceError: dereference a null reference\n"
+val checkNullPointerString: BuiltinString = "__s_check_null_pointer" to "NullReferenceError: dereference a null reference\\n"
 val checkNullPointer: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_check_null_pointer"),
         listOf(
@@ -185,7 +185,7 @@ val checkNullPointer: BuiltinFunction = BuiltinFunction(Function(
         )
 ), listOf(throwRuntimeError) to listOf(checkNullPointerString))
 
-val nullPointerDereferenceString: BuiltinString = "__s_null_pointer_deref" to "NullReferenceError: dereference a null reference\n"
+val nullPointerDereferenceString: BuiltinString = "__s_null_pointer_deref" to "NullReferenceError: dereference a null reference\\n"
 val freePair: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_free_pair"),
         listOf(
