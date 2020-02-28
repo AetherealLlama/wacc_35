@@ -111,6 +111,7 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             Pop(listOf(ProgramCounter)))
     val strings = global.strings.map { InitializedString(global.getStringLabel(it), it.length, it) } +
             global.usedBuiltins.flatMap { it.depStrings }.toList()
+//    funcs += global.usedBuiltins.flatMap { it.depFunctions }
 
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
@@ -118,6 +119,9 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
 val BuiltinFunction.depStrings: Set<InitializedString>
     get() = (deps.second.map { InitializedString(it.first, it.second.length, it.second) } +
             deps.first.flatMap { it.depStrings }).toSet()
+
+val BuiltinFunction.depFunctions: Set<Function>
+    get() = (listOf(function) + deps.first.flatMap { it.depFunctions }).toSet()
 
 private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
