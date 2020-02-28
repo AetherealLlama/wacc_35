@@ -9,8 +9,7 @@ data class Function(val label: Label, val instructions: List<Instruction>, val m
             // TODO find a way to use the Global special instruction?
             builder.append(".global ${label.name}\n")
         }
-        builder.append("$label")
-        instructions.forEach { builder.append(it) }
+        instructions.forEach { builder.appendln(it) }
         return builder.toString()
     }
 }

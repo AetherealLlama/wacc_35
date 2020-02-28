@@ -90,11 +90,11 @@ private class CodeGenContext(
 fun Program.getAsm(): String {
     val (data, text) = genCode()
     val builder = StringBuilder()
-    if (data.data.isNotEmpty()) {
-        data.data.forEach { builder.append(it) }
-    }
-    builder.append(".text\n")
-    text.functions.forEach { builder.append(it) }
+    if (!data.data.isEmpty())
+        builder.appendln("\t.data")
+    data.data.forEach { builder.appendln(it) }
+    builder.appendln("\t.text")
+    text.instructions.flatten().forEach { builder.appendln(it) }
     return builder.toString()
 }
 
@@ -102,23 +102,22 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
     val funcs = funcs.map { it.codeGen(global) }.toMutableList()
     val statCtx = CodeGenContext(global, 0, emptyList())
-    funcs += Function(
-            Special.Label("main"),
-            emptyList<Instruction>() +
-                    Push(listOf(LinkRegister)) +
-                    stat.genCodeWithNewScope(statCtx) +
-                    Pop(listOf(ProgramCounter))
-    )
+    funcs += (emptyList<Instruction>() +
+            Special.Global("main") +
+            Special.Label("main") +
+            Push(listOf(LinkRegister)) +
+            stat.genCodeWithNewScope(statCtx) +
+            Pop(listOf(ProgramCounter)))
     return Section.DataSection(emptyList()) to Section.TextSection(funcs)
 }
 
-private fun Func.codeGen(global: GlobalCodeGenData): Function {
+private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
-    val instrs = emptyList<Instruction>() +
+    return emptyList<Instruction>() +
+            Special.Label(this.label) +
             Push(listOf(LinkRegister)) +
             stat.genCodeWithNewScope(ctx, params.map { it.name to it.type }) +
             Pop(listOf(ProgramCounter))
-    return Function(Special.Label(name), instrs, false)
 }
 
 private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {

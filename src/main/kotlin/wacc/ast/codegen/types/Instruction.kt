@@ -13,21 +13,17 @@ sealed class Instruction {
         val setCondCodes: Boolean = false
     ) : Instruction() {
         override fun toString(): String {
-            val builder = StringBuilder()
+            val builder = StringBuilder("\t\t")
             when (operation) {
-                is Operation.MulOp -> TODO()
                 is Operation.DivOp -> TODO()
                 else -> {
-                    builder.append("$operation ")
-                    when (operand) {
-                        is Operand.Imm -> {
-                            builder.append("$rd, $rn, #${operand.value}\n")
-                        }
-                        is Operand.Reg -> builder.append("$rd, $rn, ${operand.reg}\n")
+                    builder.append("$operation $rd, $rn, ")
+                    builder.append(when (operand) {
+                        is Operand.Imm -> operand.value
+                        is Operand.Reg -> operand.reg
                         is Operand.Label -> throw IllegalStateException()
-                    }
+                    })
                 }
-                // TODO: barrel shifter
             }
             return builder.toString()
         }
@@ -42,19 +38,19 @@ sealed class Instruction {
         val condition: Condition = Condition.Always
     ) : Instruction() {
         override fun toString(): String {
-            val builder = StringBuilder()
-            builder.append("LDR$condition $rd, ")
+            val builder = StringBuilder("\t\t")
+            builder.append("LDR$condition$access $rd, ")
             builder.append(when (op) {
-                is Operand.Imm -> "=${op.value}\n"
-                is Operand.Label -> "=${op.label}\n"
+                is Operand.Imm -> "=${op.value}"
+                is Operand.Label -> "=${op.label}"
                 is Operand.Reg -> when (offset) {
-                    is Operand.Reg -> "[${op.reg}, " + if (plus) "" else "-" + "${offset.reg}]\n"
+                    is Operand.Reg -> "[${op.reg}, " + if (plus) "" else "-" + "${offset.reg}]"
                     is Operand.Imm ->
                         if (offset.value == 0)
-                            "[${op.reg}]\n"
+                            "[${op.reg}]"
                         else
-                            "[${op.reg}, #${offset.value}]\n"
-                    null -> "[${op.reg}]\n"
+                            "[${op.reg}, #${offset.value}]"
+                    null -> "[${op.reg}]"
                     is Operand.Label -> throw IllegalStateException()
                 }
             })
@@ -77,16 +73,21 @@ sealed class Instruction {
         val moveReg: Boolean = false,
         val access: MemoryAccess = MemoryAccess.Word,
         val condition: Condition = Condition.Always
-    ) : Instruction()
+    ) : Instruction() {
+        override fun toString(): String {
+            val displayOffset = offset?.let { ", ${if (plus) "" else "-" }$it" } ?: ""
+            return "\t\tSTR$condition $rd [$rn$displayOffset]${if (moveReg) "!" else ""}"
+        }
+    }
 
     data class Move(
         val reg: Register,
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "MOV$condition $reg, " + when (operand) {
-            is Operand.Imm -> "#${operand.value}\n"
-            is Operand.Reg -> "${operand.reg}\n"
+        override fun toString(): String = "\t\tMOV$condition $reg, " + when (operand) {
+            is Operand.Imm -> "#${operand.value}"
+            is Operand.Reg -> "${operand.reg}"
             is Operand.Label -> throw IllegalStateException()
         }
     }
@@ -97,9 +98,9 @@ sealed class Instruction {
         val shift: BarrelShift? = null,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "CMP$condition $reg, " + when (operand) {
-            is Operand.Imm -> "#${operand.value}\n"
-            is Operand.Reg -> "${operand.reg}\n"
+        override fun toString(): String = "\t\tCMP$condition $reg, " + when (operand) {
+            is Operand.Imm -> "#${operand.value}"
+            is Operand.Reg -> "${operand.reg}"
             is Operand.Label -> throw IllegalStateException()
         }
     }
@@ -108,22 +109,22 @@ sealed class Instruction {
         val regs: List<Register>,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "PUSH$condition {${regs.joinToString()}}\n"
+        override fun toString(): String = "\t\tPUSH$condition {${regs.joinToString()}}"
     }
 
     data class Pop(
         val regs: List<Register>,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "POP$condition {${regs.joinToString()}}\n"
+        override fun toString(): String = "\t\tPOP$condition {${regs.joinToString()}}"
     }
 
     data class Branch(
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = when (operand) {
-            is Operand.Label -> "B$condition ${operand.label}\n"
+        override fun toString(): String = "\t\t" + when (operand) {
+            is Operand.Label -> "B$condition ${operand.label}"
             else -> throw IllegalStateException()
         }
     }
@@ -132,8 +133,8 @@ sealed class Instruction {
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = when (operand) {
-            is Operand.Label -> "BL$condition ${operand.label}\n"
+        override fun toString(): String = "\t\t" + when (operand) {
+            is Operand.Label -> "BL$condition ${operand.label}"
             else -> throw IllegalStateException()
         }
     }
@@ -148,15 +149,15 @@ sealed class Instruction {
 
     sealed class Special : Instruction() {
         data class Label(val name: String) : Special() {
-            override fun toString(): String = "$name:\n"
+            override fun toString(): String = "\t$name:"
         }
 
         object Ltorg : Special() {
-            override fun toString(): String = ".ltorg"
+            override fun toString(): String = "\t.ltorg"
         }
 
         data class Global(val label: String) : Special() {
-            override fun toString(): String = ".global $label"
+            override fun toString(): String = "\t.global $label"
         }
     }
 }
