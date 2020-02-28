@@ -1,10 +1,10 @@
 package wacc.ast.codegen
 
-import wacc.ast.codegen.types.Condition
+import wacc.ast.codegen.types.*
+import wacc.ast.codegen.types.Condition.*
 import wacc.ast.codegen.types.Function
 import wacc.ast.codegen.types.Instruction.*
 import wacc.ast.codegen.types.Instruction.Special.Label
-import wacc.ast.codegen.types.Operand
 import wacc.ast.codegen.types.Operand.Imm
 import wacc.ast.codegen.types.Operand.Reg
 import wacc.ast.codegen.types.Operation.AddOp
@@ -13,7 +13,13 @@ import wacc.ast.codegen.types.Register.*
 typealias BuiltinDependency = Pair<List<BuiltinFunction>, List<BuiltinString>>
 typealias BuiltinString = Pair<String, String> // Label to Value
 
-data class BuiltinFunction(val function: Function, val deps: BuiltinDependency)
+data class BuiltinFunction(val function: Function, val deps: BuiltinDependency) {
+    val label: Operand.Label
+        get() = Operand.Label(this.function.label.name)
+}
+
+private val BuiltinString.label: Operand.Label
+    get() = Operand.Label(this.first)
 
 // <editor-fold desc="print functions">
 
@@ -22,10 +28,10 @@ val printLn: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_print_ln"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Load(GeneralRegister(0), Operand.Label(printLnString.first)), // TODO figure out how to get strings back to the data store
-                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                Load(R0, printLnString.label), // TODO figure out how to get strings back to the data store
+                Op(AddOp, R0, R0, Imm(4)),
                 BranchLink(Operand.Label("puts")),
-                Move(GeneralRegister(0), Imm(0)),
+                Move(R0, Imm(0)),
                 BranchLink(Operand.Label("fflush")),
                 Pop(listOf(ProgramCounter))
         )
@@ -36,12 +42,12 @@ val printString: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_print_string"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Load(GeneralRegister(1), Reg(GeneralRegister(0))),
-                Op(AddOp, GeneralRegister(2), GeneralRegister(0), Imm(4)),
-                Load(GeneralRegister(0), Operand.Label(printStringString.first)),
-                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                Load(R1, Reg(R0)),
+                Op(AddOp, R2, R0, Imm(4)),
+                Load(R0, printStringString.label),
+                Op(AddOp, R0, R0, Imm(4)),
                 BranchLink(Operand.Label("printf")),
-                Move(GeneralRegister(0), Imm(0)),
+                Move(R0, Imm(0)),
                 BranchLink(Operand.Label("fflush")),
                 Pop(listOf(ProgramCounter))
         )
@@ -52,11 +58,11 @@ val printInt: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_print_int"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Move(GeneralRegister(1), Reg(GeneralRegister(0))),
-                Load(GeneralRegister(0), Operand.Label(printIntString.first)),
-                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                Move(R1, Reg(R0)),
+                Load(R0, printIntString.label),
+                Op(AddOp, R0, R0, Imm(4)),
                 BranchLink(Operand.Label("printf")),
-                Move(GeneralRegister(0), Imm(0)),
+                Move(R0, Imm(0)),
                 BranchLink(Operand.Label("fflush")),
                 Pop(listOf(ProgramCounter))
         )
@@ -67,11 +73,11 @@ val printReference: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_print_reference"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Move(GeneralRegister(1), Reg(GeneralRegister(0))),
-                Load(GeneralRegister(0), Operand.Label(printReferenceString.first)),
-                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                Move(R1, Reg(R0)),
+                Load(R0, printReferenceString.label),
+                Op(AddOp, R0, R0, Imm(4)),
                 BranchLink(Operand.Label("printf")),
-                Move(GeneralRegister(0), Imm(0)),
+                Move(R0, Imm(0)),
                 BranchLink(Operand.Label("fflush")),
                 Pop(listOf(ProgramCounter))
         )
@@ -83,16 +89,46 @@ val printBool: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_print_bool"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Compare(GeneralRegister(0), Imm(0)),
-                Load(GeneralRegister(0), Operand.Label(printBoolTrueString.first), condition = Condition.NotEqual),
-                Load(GeneralRegister(0), Operand.Label(printBoolFalseString.first), condition = Condition.Equal),
-                Op(AddOp, GeneralRegister(0), GeneralRegister(0), Imm(4)),
+                Compare(R0, Imm(0)),
+                Load(R0, printBoolTrueString.label, condition = NotEqual),
+                Load(R0, printBoolFalseString.label, condition = Equal),
+                Op(AddOp, R0, R0, Imm(4)),
                 BranchLink(Operand.Label("printf")),
-                Move(GeneralRegister(0), Imm(0)),
+                Move(R0, Imm(0)),
                 BranchLink(Operand.Label("fflush")),
                 Pop(listOf(ProgramCounter))
         )
 ), Pair(emptyList(), listOf(printBoolTrueString, printBoolFalseString)))
+
+// </editor-fold>
+
+// <editor-fold desc="print functions">
+
+val readIntString: BuiltinString = "__s_read_int" to "%d"
+val readInt: BuiltinFunction = BuiltinFunction(Function(
+        Label("__f_read_int"),
+        listOf(
+                Push(listOf(LinkRegister)),
+                Move(R1, Reg(R0)),
+                Load(R0, readIntString.label),
+                Op(AddOp, R0, R0, Imm(4)),
+                BranchLink(Operand.Label("scanf")),
+                Pop(listOf(ProgramCounter))
+        )
+), Pair(emptyList(), listOf(readIntString)))
+
+val readCharString: BuiltinString = "__s_read_char" to "%c"
+val readChar: BuiltinFunction = BuiltinFunction(Function(
+        Label("__f_read_char"),
+        listOf(
+                Push(listOf(LinkRegister)),
+                Move(R1, Reg(R0)),
+                Load(R0, readCharString.label),
+                Op(AddOp, R0, R0, Imm(4)),
+                BranchLink(Operand.Label("scanf")),
+                Pop(listOf(ProgramCounter))
+        )
+), Pair(emptyList(), listOf(readCharString)))
 
 // </editor-fold>
 
@@ -101,8 +137,8 @@ val printBool: BuiltinFunction = BuiltinFunction(Function(
 val throwRuntimeError: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_throw_runtime_error"),
         listOf(
-                BranchLink(Operand.Label(printString.function.label.name)),
-                Move(GeneralRegister(0), Imm(-1)),
+                BranchLink(printString.label),
+                Move(R0, Imm(-1)),
                 BranchLink(Operand.Label("exit"))
         )
 ), Pair(listOf(printString), emptyList()))
@@ -111,8 +147,8 @@ val overflowErrorString: BuiltinString = "__s_overflow_error" to "OverflowError:
 val throwOverflowError: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_throw_overflow_error"),
         listOf(
-                Load(GeneralRegister(0), Operand.Label(overflowErrorString.first)),
-                BranchLink(Operand.Label(throwRuntimeError.function.label.name))
+                Load(R0, overflowErrorString.label),
+                BranchLink(throwRuntimeError.label)
         )
 ), listOf(throwRuntimeError) to listOf(overflowErrorString))
 
@@ -126,13 +162,13 @@ val checkArrayBounds: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_check_array_bounds"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Compare(GeneralRegister(0), Imm(0)),
-                Load(GeneralRegister(0), Operand.Label(negativeArrayIndexString.first), condition = Condition.SignedLess),
-                BranchLink(Operand.Label(throwRuntimeError.function.label.name), condition = Condition.SignedLess),
-                Load(GeneralRegister(1), Reg(GeneralRegister(1))),
-                Compare(GeneralRegister(0), Reg(GeneralRegister(1))),
-                Load(GeneralRegister(0), Operand.Label(arrayIndexTooLargeString.first), condition = Condition.CarrySet),
-                BranchLink(Operand.Label(throwRuntimeError.function.label.name), condition = Condition.CarrySet),
+                Compare(R0, Imm(0)),
+                Load(R0, negativeArrayIndexString.label, condition = SignedLess),
+                BranchLink(throwRuntimeError.label, condition = SignedLess),
+                Load(R1, Reg(R1)),
+                Compare(R0, Reg(R1)),
+                Load(R0, arrayIndexTooLargeString.label, condition = CarrySet),
+                BranchLink(throwRuntimeError.label, condition = CarrySet),
                 Pop(listOf(ProgramCounter))
         )
 ), listOf(throwRuntimeError) to listOf(negativeArrayIndexString, arrayIndexTooLargeString))
@@ -142,9 +178,9 @@ val checkNullPointer: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_check_null_pointer"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Compare(GeneralRegister(0), Imm(0)),
-                Load(GeneralRegister(0), Operand.Label(checkNullPointerString.first), condition = Condition.Equal),
-                BranchLink(Operand.Label(throwRuntimeError.function.label.name), condition = Condition.Equal),
+                Compare(R0, Imm(0)),
+                Load(R0, checkNullPointerString.label, condition = Equal),
+                BranchLink(throwRuntimeError.label, condition = Equal),
                 Pop(listOf(ProgramCounter))
         )
 ), listOf(throwRuntimeError) to listOf(checkNullPointerString))
@@ -154,16 +190,16 @@ val freePair: BuiltinFunction = BuiltinFunction(Function(
         Label("__f_free_pair"),
         listOf(
                 Push(listOf(LinkRegister)),
-                Compare(GeneralRegister(0), Imm(0)),
-                Load(GeneralRegister(0), Operand.Label(nullPointerDereferenceString.first), condition = Condition.Equal),
-                Branch(Operand.Label(throwRuntimeError.function.label.name), condition = Condition.Equal),
-                Push(listOf(GeneralRegister(0))),
-                Load(GeneralRegister(0), Reg(GeneralRegister(0))),
+                Compare(R0, Imm(0)),
+                Load(R0, nullPointerDereferenceString.label, condition = Equal),
+                Branch(throwRuntimeError.label, condition = Equal),
+                Push(listOf(R0)),
+                Load(R0, Reg(R0)),
                 BranchLink(Operand.Label("free")),
-                Load(GeneralRegister(0), Reg(StackPointer)),
-                Load(GeneralRegister(0), Reg(StackPointer), Imm(4)),
+                Load(R0, Reg(StackPointer)),
+                Load(R0, Reg(StackPointer), Imm(4)),
                 BranchLink(Operand.Label("free")),
-                Pop(listOf(GeneralRegister(0))),
+                Pop(listOf(R0)),
                 BranchLink(Operand.Label("free")),
                 Pop(listOf(ProgramCounter))
         )
