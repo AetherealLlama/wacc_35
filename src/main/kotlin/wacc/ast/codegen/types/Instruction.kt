@@ -9,7 +9,8 @@ sealed class Instruction {
         val rn: Register,
         val operand: Operand,
         val shift: BarrelShift? = null,
-        val condition: Condition = Condition.Always
+        val condition: Condition = Condition.Always,
+        val setCondCodes: Boolean = false
     ) : Instruction() {
         override fun toString(): String {
             val builder = StringBuilder()
