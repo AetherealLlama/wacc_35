@@ -109,8 +109,10 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             Push(listOf(LinkRegister)) +
             stat.genCodeWithNewScope(statCtx) +
             Pop(listOf(ProgramCounter)))
-    val strings = global.strings.map { InitializedString(global.getStringLabel(it), it.length, it) } +
-            global.usedBuiltins.flatMap { it.depStrings }.toList()
+    val strings = global.strings.map {
+        val newIt = it.removeSurrounding("\"")
+        InitializedString(global.getStringLabel(it), newIt.length, newIt)
+    } + global.usedBuiltins.flatMap { it.depStrings }.toList()
     global.usedBuiltins.flatMap { it.depFunctions }.forEach {
         funcs += emptyList<Instruction>() +
                 it.label +
