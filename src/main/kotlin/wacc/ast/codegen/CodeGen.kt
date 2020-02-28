@@ -241,7 +241,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
             else listOf(Load(ctx.dst, Imm(value.toInt())))
         is Expr.Literal.BoolLiteral -> listOf(Move(ctx.dst, Imm(if (value) 1 else 0, BOOL)))
         is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst, Imm(value.toInt(), CHAR)))
-        is Expr.Literal.StringLiteral -> listOf(Move(ctx.dst, Operand.Label(ctx.global.getStringLabel(value))))
+        is Expr.Literal.StringLiteral -> listOf(Load(ctx.dst, Operand.Label(ctx.global.getStringLabel(value))))
         is Expr.Literal.PairLiteral -> throw IllegalStateException()
         is Expr.Ident -> listOf(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
         is Expr.ArrayElem -> emptyList<Instruction>() +
