@@ -111,7 +111,11 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             Pop(listOf(ProgramCounter)))
     val strings = global.strings.map { InitializedString(global.getStringLabel(it), it.length, it) } +
             global.usedBuiltins.flatMap { it.depStrings }.toList()
-//    funcs += global.usedBuiltins.flatMap { it.depFunctions }
+    global.usedBuiltins.flatMap { it.depFunctions }.forEach {
+        funcs += emptyList<Instruction>() +
+                it.label +
+                it.instructions
+    }
 
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
