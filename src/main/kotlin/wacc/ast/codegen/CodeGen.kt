@@ -9,6 +9,7 @@ import wacc.ast.codegen.types.Condition.*
 import wacc.ast.codegen.types.ImmType.*
 import wacc.ast.codegen.types.Instruction.*
 import wacc.ast.codegen.types.Operand.Imm
+import wacc.ast.codegen.types.Operand.Reg
 import wacc.ast.codegen.types.Register.*
 
 /*
@@ -119,7 +120,11 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
             is AssignLhs.PairElem -> TODO()
         }
     }
-    is Stat.Read -> TODO()
+    is Stat.Read -> listOf(Op(Operation.AddOp, ctx.dst!!, StackPointer, Imm(0)), Move(R0, ctx.dst!!.op)) + when (type) {
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(readInt)
+        is Type.BaseType.TypeChar -> ctx.branchBuiltin(readChar)
+        else -> throw IllegalStateException()
+    } + Load(ctx.dst!!, StackPointer.op)
     is Stat.Free -> expr.genCode(ctx) + Move(R0, ctx.dst!!.op) + ctx.branchBuiltin(freePair)
     is Stat.Return -> expr.genCode(ctx) + Move(R0, ctx.dst!!.op) + Pop(listOf(ProgramCounter))
     is Stat.Exit ->
@@ -328,4 +333,4 @@ private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = A
         BranchLink(Operand.Label(f.function.label.name), condition = cond).also { global.usedBuiltins.add(f) }
 
 private val Register.op: Operand
-    get() = Operand.Reg(this)
+    get() = Reg(this)
