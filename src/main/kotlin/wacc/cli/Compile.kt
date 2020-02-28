@@ -71,7 +71,7 @@ class Compile : Callable<Int>, Logging {
         if (stdout) {
             println(programAsm)
         } else {
-            val asmFile = File(file!!.nameWithoutExtension + ".S")
+            val asmFile = File(file!!.nameWithoutExtension + ".s")
             asmFile.writeText(programAsm)
         }
 
