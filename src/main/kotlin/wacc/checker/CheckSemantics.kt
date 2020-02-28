@@ -40,6 +40,7 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
         var typeError = emptyList<ProgramError>()
         if (listOf(Type.BaseType.TypeInt, Type.BaseType.TypeChar).none { type matches it })
             typeError = listOf(ReadTypeMismatch(type, pos))
+        this.type = type
         ctx.currentScope to errors + typeError
     }
     is Stat.Free -> expr.checkSemantics(ctx).let { (type, errors) ->

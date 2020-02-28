@@ -30,7 +30,7 @@ class Compile : Callable<Int>, Logging {
     private var semantic = true
 
     @Option(names = ["-t", "--stdout"], description = ["Print output to STDOUT"])
-    private var stdout = false
+    private var stdout = true
 
     override fun call(): Int {
         // Generate input from file

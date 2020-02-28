@@ -6,9 +6,12 @@ import wacc.ast.BinaryOperator.*
 import wacc.ast.UnaryOperator.*
 import wacc.ast.codegen.types.*
 import wacc.ast.codegen.types.Condition.*
+import wacc.ast.codegen.types.Function
 import wacc.ast.codegen.types.ImmType.*
 import wacc.ast.codegen.types.Instruction.*
 import wacc.ast.codegen.types.Operand.Imm
+import wacc.ast.codegen.types.Operand.Reg
+import wacc.ast.codegen.types.Operation.*
 import wacc.ast.codegen.types.Register.*
 
 /*
@@ -22,9 +25,9 @@ private const val MAX_USABLE_REG = 11
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
 private class GlobalCodeGenData(
-    var labelCount: Int = 0,
-    var strings: List<String>,
-    val program: Program
+        val program: Program,
+        var strings: List<String> = emptyList(),
+        var labelCount: Int = 0
 ) {
     fun getLabel() = "L${labelCount++}"
 
@@ -36,11 +39,10 @@ private class GlobalCodeGenData(
 }
 
 private class CodeGenContext(
-    val global: GlobalCodeGenData,
-    val func: Func?,
-    val stackOffset: Int,
-    val scopes: List<List<Pair<String, Type>>>,
-    val availableRegs: List<Register> = usableRegs
+        val global: GlobalCodeGenData,
+        val stackOffset: Int,
+        val scopes: List<List<Pair<String, Type>>>,
+        val availableRegs: List<Register> = usableRegs
 ) {
     fun offsetOfIdent(ident: String): Int {
         var offset = stackOffset
@@ -64,19 +66,19 @@ private class CodeGenContext(
             takeRegs(1)?.let { it.first[0] to it.second }
 
     fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext =
-            CodeGenContext(global, func, stackOffset, listOf(newScope) + scopes, availableRegs)
+            CodeGenContext(global, stackOffset, listOf(newScope) + scopes, availableRegs)
 
     fun takeRegs(n: Int): Pair<List<Register>, CodeGenContext>? =
             if (availableRegs.size < n+2)
                 null
             else
-                availableRegs.take(n) to CodeGenContext(global, func, stackOffset, scopes, availableRegs.drop(n))
+                availableRegs.take(n) to CodeGenContext(global, stackOffset, scopes, availableRegs.drop(n))
 
     fun withRegs(vararg regs: Register) =
-            CodeGenContext(global, func, stackOffset, scopes, regs.asList() + availableRegs)
+            CodeGenContext(global, stackOffset, scopes, regs.asList() + availableRegs)
 
     fun withStackOffset(offset: Int) =
-            CodeGenContext(global, func, offset, scopes, availableRegs)
+            CodeGenContext(global, offset, scopes, availableRegs)
 
     val dst: Register
         get() = availableRegs[0]
@@ -97,22 +99,31 @@ fun Program.getAsm(): String {
 }
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
-    TODO()
-//    val dataSection = Section.DataSection(emptyList())
-//    val funcs = funcs.map(Func::codeGen).toMutableList()
-//    funcs += stat.genMainFunc()
-//    return Section.DataSection(emptyList()) to Section.TextSection(funcs)
+    val global = GlobalCodeGenData(this)
+    val funcs = funcs.map { it.codeGen(global) }.toMutableList()
+    val statCtx = CodeGenContext(global, 0, emptyList())
+    funcs += Function(
+            Special.Label("main"),
+            emptyList<Instruction>() +
+                    Push(listOf(LinkRegister)) +
+                    stat.genCodeWithNewScope(statCtx) +
+                    Pop(listOf(ProgramCounter))
+    )
+    return Section.DataSection(emptyList()) to Section.TextSection(funcs)
 }
 
-// private fun Func.codeGen(): Function {
-//    return Function(Label(name), emptyList(), false)
-// }
+private fun Func.codeGen(global: GlobalCodeGenData): Function {
+    val ctx = CodeGenContext(global, 0, emptyList())
+    val instrs = emptyList<Instruction>() +
+            Push(listOf(LinkRegister)) +
+            stat.genCodeWithNewScope(ctx, params.map { it.name to it.type }) +
+            Pop(listOf(ProgramCounter))
+    return Function(Special.Label(name), instrs, false)
+}
 
 private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is Stat.Skip -> emptyList()
-    is Stat.AssignNew -> rhs.genCode(ctx).let { rhsInstrs ->
-        rhsInstrs + Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)))
-    }
+    is Stat.AssignNew -> rhs.genCode(ctx) + Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)))
     is Stat.Assign -> rhs.genCode(ctx).let { rhsInstrs ->
         when (lhs) {
             is AssignLhs.Variable -> rhsInstrs + Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)))
@@ -120,7 +131,11 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
             is AssignLhs.PairElem -> TODO()
         }
     }
-    is Stat.Read -> TODO()
+    is Stat.Read -> listOf(Op(AddOp, ctx.dst, StackPointer, Imm(0)), Move(R0, ctx.dst.op)) + when (type) {
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(readInt)
+        is Type.BaseType.TypeChar -> ctx.branchBuiltin(readChar)
+        else -> throw IllegalStateException()
+    } + Load(ctx.dst, StackPointer.op)
     is Stat.Free -> expr.genCode(ctx) + Move(R0, ctx.dst.op) + ctx.branchBuiltin(freePair)
     is Stat.Return -> expr.genCode(ctx) + Move(R0, ctx.dst.op) + Pop(listOf(ProgramCounter))
     is Stat.Exit ->
@@ -137,7 +152,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         is Type.PairType -> ctx.branchBuiltin(printReference)
         else -> throw IllegalStateException()
     }
-    is Stat.Println -> Stat.Print(pos, expr).genCode(ctx) + BranchLink(Operand.Label(printLn.function.label.name)).also { ctx.global.usedBuiltins.add(printLn) }
+    is Stat.Println -> Stat.Print(pos, expr).also { it.type = type }.genCode(ctx) + ctx.branchBuiltin(printLn)
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
         emptyList<Instruction>() +
                 expr.genCode(ctx) + // condition
@@ -165,13 +180,14 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
 
 private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
     is AssignRhs.Expression -> expr.genCode(ctx)
-    is AssignRhs.ArrayLiteral -> ctx.takeReg()!!.let { (arrayAddr, innerCtx) -> emptyList<Instruction>() +
-            ctx.malloc((exprs.size + 1) * 4) + // Allocate array
-            exprs.mapIndexed { i, expr ->
-                expr.genCode(innerCtx) + Store(innerCtx.dst, arrayAddr, Imm((i + 1) * 4))
-            }.flatten() + // Store array values
-            Load(innerCtx.dst, Imm(exprs.size)) +
-            Store(innerCtx.dst, arrayAddr) // Store array length
+    is AssignRhs.ArrayLiteral -> ctx.takeReg()!!.let { (arrayAddr, innerCtx) ->
+        emptyList<Instruction>() +
+                ctx.malloc((exprs.size + 1) * 4) + // Allocate array
+                exprs.mapIndexed { i, expr ->
+                    expr.genCode(innerCtx) + Store(innerCtx.dst, arrayAddr, Imm((i + 1) * 4))
+                }.flatten() + // Store array values
+                Load(innerCtx.dst, Imm(exprs.size)) +
+                Store(innerCtx.dst, arrayAddr) // Store array length
     }
     is AssignRhs.Newpair -> listOf(
             Load(R0, Imm(8)),
@@ -198,7 +214,7 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
                         totalOffset += type.size
                     } +
                     BranchLink(Operand.Label(func.label)) +
-                    Op(Operation.AddOp, StackPointer, StackPointer, Imm(totalOffset))
+                    Op(AddOp, StackPointer, StackPointer, Imm(totalOffset))
         }
     }
 }
@@ -214,7 +230,7 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
         is Expr.Literal.PairLiteral -> throw IllegalStateException()
         is Expr.Ident -> listOf(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
         is Expr.ArrayElem -> emptyList<Instruction>() +
-                Op(Operation.AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))) +  // get variable address
+                Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))) +  // get variable address
                 exprs.flatMap { expr ->
                     emptyList<Instruction>() +
                             (ctx.takeReg()?.let { (_, ctx2) ->
@@ -230,12 +246,12 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
                             Move(R0, ctx.nxt.op) +
                             Move(R1, ctx.dst.op) +
                             ctx.branchBuiltin(checkArrayBounds) + // check array bounds
-                            Op(Operation.AddOp, ctx.dst, ctx.dst, Imm(4)) +  // compute address of desired array elem
-                            Op(Operation.AddOp, ctx.dst, ctx.dst, ctx.nxt.op, BarrelShift(2, BarrelShift.Type.LSL))
+                            Op(AddOp, ctx.dst, ctx.dst, Imm(4)) +  // compute address of desired array elem
+                            Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, BarrelShift(2, BarrelShift.Type.LSL))
                 } + Load(ctx.dst, ctx.dst.op) // get array elem
         is Expr.UnaryOp -> when (operator) {
-            BANG -> expr.genCode(ctx) + Op(Operation.NegateOp, ctx.dst, ctx.dst, ctx.dst.op)
-            MINUS -> expr.genCode(ctx) + Op(Operation.RevSubOp, ctx.dst, ctx.dst, Imm(0))
+            BANG -> expr.genCode(ctx) + Op(NegateOp, ctx.dst, ctx.dst, ctx.dst.op)
+            MINUS -> expr.genCode(ctx) + Op(RevSubOp, ctx.dst, ctx.dst, Imm(0))
             LEN -> expr.genCode(ctx) + Load(ctx.dst, ctx.dst.op)
             ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
         }
@@ -259,34 +275,24 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
                         LongMul(ctx.dst, ctx.nxt, ctx.dst, ctx.nxt) +
                         Compare(ctx.nxt, ctx.dst.op, BarrelShift(31, BarrelShift.Type.ASR)) +
                         ctx.branchBuiltin(throwOverflowError, Always)
-                DIV -> listOf(Op(Operation.DivOp(), ctx.dst, ctx.dst, ctx.nxt.op))
-                MOD -> listOf(Op(Operation.ModOp(), ctx.dst, ctx.dst, ctx.nxt.op))
+                DIV -> listOf(Op(DivOp(), ctx.dst, ctx.dst, ctx.nxt.op))
+                MOD -> listOf(Op(ModOp(), ctx.dst, ctx.dst, ctx.nxt.op))
                 ADD -> emptyList<Instruction>() +
-                        Op(Operation.AddOp, ctx.dst, ctx.dst, ctx.nxt.op, setCondCodes = true) +
+                        Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, setCondCodes = true) +
                         ctx.branchBuiltin(throwOverflowError, Overflow)
-                SUB -> listOf(Op(Operation.SubOp, ctx.dst, ctx.dst, ctx.nxt.op))
+                SUB -> listOf(Op(SubOp, ctx.dst, ctx.dst, ctx.nxt.op))
                 GT -> regs.assignBool(SignedGreaterThan)
                 GTE -> regs.assignBool(SignedGreaterOrEqual)
                 LT -> regs.assignBool(SignedLess)
                 LTE -> regs.assignBool(SignedLessOrEqual)
                 EQ -> regs.assignBool(Equal)
                 NEQ -> regs.assignBool(NotEqual)
-                LAND -> listOf(Op(Operation.AndOp, ctx.dst, ctx.dst, ctx.nxt.op))
-                LOR -> listOf(Op(Operation.OrOp, ctx.dst, ctx.dst, ctx.nxt.op))
+                LAND -> listOf(Op(AndOp, ctx.dst, ctx.dst, ctx.nxt.op))
+                LOR -> listOf(Op(OrOp, ctx.dst, ctx.dst, ctx.nxt.op))
             }
         }
     }
 }
-
-// private fun Stat.genMainFunc(): Function {
-//    // TODO remove hardcoded function
-//    return Function(Label("main"), listOf(
-//            Push(listOf(LinkRegister)),
-//            Move(R0, Imm(0)),
-//            Pop(listOf(ProgramCounter)),
-//            Special.Ltorg
-//    ), true)
-// }
 
 private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
         Compare(first, second.op),
@@ -327,13 +333,14 @@ private val List<Pair<String, Type>>.offset: Int
     get() = sumBy { it.second.size }
 
 // Generates code for a statement, with instructions to adjust the stack pointer to account for the new scope
-private fun Stat.genCodeWithNewScope(ctx: CodeGenContext): List<Instruction> {
-    val pre = Op(Operation.SubOp, StackPointer, StackPointer, Imm(vars.offset))
-    val post = Op(Operation.AddOp, StackPointer, StackPointer, Imm(vars.offset))
+private fun Stat.genCodeWithNewScope(ctx: CodeGenContext, extraVars: List<Pair<String, Type>> = emptyList()): List<Instruction> {
+    val vars = this.vars + extraVars
+    val pre = Op(SubOp, StackPointer, StackPointer, Imm(vars.offset))
+    val post = Op(AddOp, StackPointer, StackPointer, Imm(vars.offset))
     return emptyList<Instruction>() +
             if (vars.isEmpty()) emptyList() else listOf(pre) +
-            genCode(ctx.withNewScope(vars)) +
-            if (vars.isEmpty()) emptyList() else listOf(post)
+                    genCode(ctx.withNewScope(vars)) +
+                    if (vars.isEmpty()) emptyList() else listOf(post)
 }
 
 val Type.size: Int
@@ -346,7 +353,7 @@ val Func.label: String
     get() = "f_$name"
 
 private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = Always): Instruction =
-        BranchLink(Operand.Label(f.function.label.name), condition = cond).also { global.usedBuiltins.add(f) }
+        BranchLink(f.label, condition = cond).also { global.usedBuiltins.add(f) }
 
 private val Register.op: Operand
-    get() = Operand.Reg(this)
+    get() = Reg(this)

@@ -12,7 +12,7 @@ sealed class Stat(pos: FilePos, val vars: List<Pair<String, Type>> = emptyList()
     class Skip(pos: FilePos) : Stat(pos)
     class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos, listOf(name to type))
     class Assign(pos: FilePos, val lhs: AssignLhs, val rhs: AssignRhs) : Stat(pos)
-    class Read(pos: FilePos, val lhs: AssignLhs) : Stat(pos)
+    class Read(pos: FilePos, val lhs: AssignLhs) : Stat(pos) { lateinit var type: Type }
     class Free(pos: FilePos, val expr: Expr) : Stat(pos)
     class Return(pos: FilePos, val expr: Expr) : Stat(pos)
     class Exit(pos: FilePos, val expr: Expr) : Stat(pos)
