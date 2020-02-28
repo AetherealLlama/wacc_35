@@ -141,7 +141,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         is Type.PairType -> ctx.branchBuiltin(printReference)
         else -> throw IllegalStateException()
     }
-    is Stat.Println -> Stat.Print(pos, expr).genCode(ctx) + BranchLink(Operand.Label(printLn.function.label.name)).also { ctx.global.usedBuiltins.add(printLn) }
+    is Stat.Println -> Stat.Print(pos, expr).genCode(ctx) + ctx.branchBuiltin(printLn)
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
         emptyList<Instruction>() +
                 expr.genCode(ctx) + // condition
@@ -330,7 +330,7 @@ val Func.label: String
     get() = "f_$name"
 
 private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = Always): Instruction =
-        BranchLink(Operand.Label(f.function.label.name), condition = cond).also { global.usedBuiltins.add(f) }
+        BranchLink(f.label, condition = cond).also { global.usedBuiltins.add(f) }
 
 private val Register.op: Operand
     get() = Reg(this)
