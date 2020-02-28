@@ -243,7 +243,9 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
                     ctx.branchBuiltin(throwOverflowError, Always)
             DIV -> listOf(Op(Operation.DivOp(), dst, dst, nxt.op))
             MOD -> listOf(Op(Operation.ModOp(), dst, dst, nxt.op))
-            ADD -> listOf(Op(Operation.AddOp, dst, dst, nxt.op))
+            ADD -> emptyList<Instruction>() +
+                    Op(Operation.AddOp, dst, dst, nxt.op, setCondCodes = true) +
+                    ctx.branchBuiltin(throwOverflowError, Overflow)
             SUB -> listOf(Op(Operation.SubOp, dst, dst, nxt.op))
             GT -> regs.assignBool(SignedGreaterThan)
             GTE -> regs.assignBool(SignedGreaterOrEqual)
