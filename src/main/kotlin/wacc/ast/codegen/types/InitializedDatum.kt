@@ -5,8 +5,8 @@ sealed class InitializedDatum {
         override fun toString(): String {
             val builder = StringBuilder()
             builder.append("$label:\n")
-            builder.append(".word $length\n")
-            builder.append(".ascii \"$ascii\"")
+            builder.append("\t.word ${length + 1}\n")
+            builder.append("\t.ascii \"$ascii\\0\"")
             return builder.toString()
         }
     }

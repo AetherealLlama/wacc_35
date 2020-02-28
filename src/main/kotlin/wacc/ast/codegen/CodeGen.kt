@@ -8,6 +8,7 @@ import wacc.ast.codegen.types.*
 import wacc.ast.codegen.types.Condition.*
 import wacc.ast.codegen.types.Function
 import wacc.ast.codegen.types.ImmType.*
+import wacc.ast.codegen.types.InitializedDatum.InitializedString
 import wacc.ast.codegen.types.Instruction.*
 import wacc.ast.codegen.types.Operand.Imm
 import wacc.ast.codegen.types.Operand.Reg
@@ -108,8 +109,15 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             Push(listOf(LinkRegister)) +
             stat.genCodeWithNewScope(statCtx) +
             Pop(listOf(ProgramCounter)))
-    return Section.DataSection(emptyList()) to Section.TextSection(funcs)
+    val strings = global.strings.map { InitializedString(global.getStringLabel(it), it.length, it) } +
+            global.usedBuiltins.flatMap { it.depStrings }.toList()
+
+    return Section.DataSection(strings) to Section.TextSection(funcs)
 }
+
+val BuiltinFunction.depStrings: Set<InitializedString>
+    get() = (deps.second.map { InitializedString(it.first, it.second.length, it.second) } +
+            deps.first.flatMap { it.depStrings }).toSet()
 
 private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
