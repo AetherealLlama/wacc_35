@@ -26,9 +26,9 @@ private const val MAX_USABLE_REG = 11
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
 private class GlobalCodeGenData(
-        val program: Program,
-        var strings: List<String> = emptyList(),
-        var labelCount: Int = 0
+    val program: Program,
+    var strings: List<String> = emptyList(),
+    var labelCount: Int = 0
 ) {
     fun getLabel() = "L${labelCount++}"
 
@@ -40,10 +40,10 @@ private class GlobalCodeGenData(
 }
 
 private class CodeGenContext(
-        val global: GlobalCodeGenData,
-        val stackOffset: Int,
-        val scopes: List<List<Pair<String, Type>>>,
-        val availableRegs: List<Register> = usableRegs
+    val global: GlobalCodeGenData,
+    val stackOffset: Int,
+    val scopes: List<List<Pair<String, Type>>>,
+    val availableRegs: List<Register> = usableRegs
 ) {
     fun offsetOfIdent(ident: String): Int {
         var offset = stackOffset
@@ -70,7 +70,7 @@ private class CodeGenContext(
             CodeGenContext(global, stackOffset, listOf(newScope) + scopes, availableRegs)
 
     fun takeRegs(n: Int): Pair<List<Register>, CodeGenContext>? =
-            if (availableRegs.size < n+2)
+            if (availableRegs.size < n + 2)
                 null
             else
                 availableRegs.take(n) to CodeGenContext(global, stackOffset, scopes, availableRegs.drop(n))
@@ -83,7 +83,7 @@ private class CodeGenContext(
 
     val dst: Register
         get() = availableRegs[0]
-    
+
     val nxt: Register
         get() = availableRegs[1]
 }
@@ -241,23 +241,23 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
         is Expr.Literal.PairLiteral -> throw IllegalStateException()
         is Expr.Ident -> listOf(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
         is Expr.ArrayElem -> emptyList<Instruction>() +
-                Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))) +  // get variable address
+                Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))) + // get variable address
                 exprs.flatMap { expr ->
                     emptyList<Instruction>() +
                             (ctx.takeReg()?.let { (_, ctx2) ->
-                                expr.genCode(ctx2)  // Register implementation
+                                expr.genCode(ctx2) // Register implementation
                             } ?: let {
-                                emptyList<Instruction>() +  // Stack implementation
-                                        Push(listOf(ctx.dst)) +  // save array pointer
+                                emptyList<Instruction>() + // Stack implementation
+                                        Push(listOf(ctx.dst)) + // save array pointer
                                         expr.genCode(ctx) +
-                                        Move(ctx.nxt, ctx.dst.op) +  // nxt = array index
+                                        Move(ctx.nxt, ctx.dst.op) + // nxt = array index
                                         Pop(listOf(ctx.dst)) // dst = array pointer
                             }) + // nxt = array index
                             Load(ctx.dst, ctx.dst.op) + // get address of array
                             Move(R0, ctx.nxt.op) +
                             Move(R1, ctx.dst.op) +
                             ctx.branchBuiltin(checkArrayBounds) + // check array bounds
-                            Op(AddOp, ctx.dst, ctx.dst, Imm(4)) +  // compute address of desired array elem
+                            Op(AddOp, ctx.dst, ctx.dst, Imm(4)) + // compute address of desired array elem
                             Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, BarrelShift(2, BarrelShift.Type.LSL))
                 } + Load(ctx.dst, ctx.dst.op) // get array elem
         is Expr.UnaryOp -> when (operator) {
@@ -267,13 +267,13 @@ private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
             ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
         }
         is Expr.BinaryOp -> {
-            val instrs = ctx.takeRegs(2)?.let { (_, ctx2) ->  // Register implementation
+            val instrs = ctx.takeRegs(2)?.let { (_, ctx2) -> // Register implementation
                 if (expr1.weight <= expr2.weight) {
                     expr1.genCode(ctx2.withRegs(ctx.dst, ctx.nxt)) + expr2.genCode(ctx2.withRegs(ctx.nxt))
                 } else {
                     expr2.genCode(ctx2.withRegs(ctx.nxt, ctx.dst)) + expr2.genCode(ctx2.withRegs(ctx.dst))
                 }
-            } ?: (emptyList<Instruction>() +  // Stack implementation
+            } ?: (emptyList<Instruction>() + // Stack implementation
                     expr1.genCode(ctx) +
                     Push(listOf(ctx.dst)) +
                     expr2.genCode(ctx) +
