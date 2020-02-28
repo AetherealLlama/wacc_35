@@ -154,7 +154,7 @@ private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
         is Type.PairType -> ctx.branchBuiltin(printReference)
         else -> throw IllegalStateException()
     }
-    is Stat.Println -> Stat.Print(pos, expr).genCode(ctx) + ctx.branchBuiltin(printLn)
+    is Stat.Println -> Stat.Print(pos, expr).also { it.type = type }.genCode(ctx) + ctx.branchBuiltin(printLn)
     is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
         emptyList<Instruction>() +
                 expr.genCode(ctx) + // condition
