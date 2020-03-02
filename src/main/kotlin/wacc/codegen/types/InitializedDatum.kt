@@ -1,4 +1,4 @@
-package wacc.ast.codegen.types
+package wacc.codegen.types
 
 sealed class InitializedDatum {
     data class InitializedString(val label: String, val length: Int, val ascii: String) : InitializedDatum() {

@@ -1,4 +1,4 @@
-package wacc.ast.codegen.types
+package wacc.codegen.types
 
 // See ARM1176JZF-S Technical Reference Manual, table 1-15 for more info
 enum class Condition(private val display: String) {

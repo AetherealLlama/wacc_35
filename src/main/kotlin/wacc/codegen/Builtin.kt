@@ -1,14 +1,14 @@
-package wacc.ast.codegen
+package wacc.codegen
 
-import wacc.ast.codegen.types.*
-import wacc.ast.codegen.types.Condition.*
-import wacc.ast.codegen.types.Function
-import wacc.ast.codegen.types.Instruction.*
-import wacc.ast.codegen.types.Instruction.Special.Label
-import wacc.ast.codegen.types.Operand.Imm
-import wacc.ast.codegen.types.Operand.Reg
-import wacc.ast.codegen.types.Operation.AddOp
-import wacc.ast.codegen.types.Register.*
+import wacc.codegen.types.*
+import wacc.codegen.types.Condition.*
+import wacc.codegen.types.Function
+import wacc.codegen.types.Instruction.*
+import wacc.codegen.types.Instruction.Special.Label
+import wacc.codegen.types.Operand.Imm
+import wacc.codegen.types.Operand.Reg
+import wacc.codegen.types.Operation.AddOp
+import wacc.codegen.types.Register.*
 
 typealias BuiltinDependency = Pair<List<BuiltinFunction>, List<BuiltinString>>
 typealias BuiltinString = Pair<String, String> // Label to Value

@@ -1,4 +1,4 @@
-package wacc.ast.codegen.types
+package wacc.codegen.types
 
 import java.lang.IllegalStateException
 

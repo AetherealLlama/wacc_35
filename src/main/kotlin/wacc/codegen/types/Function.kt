@@ -1,6 +1,6 @@
-package wacc.ast.codegen.types
+package wacc.codegen.types
 
-import wacc.ast.codegen.types.Instruction.Special.Label
+import wacc.codegen.types.Instruction.Special.Label
 
 data class Function(val label: Label, val instructions: List<Instruction>, val main: Boolean = false) {
     override fun toString(): String {

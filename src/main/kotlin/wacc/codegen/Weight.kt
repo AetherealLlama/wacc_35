@@ -1,4 +1,4 @@
-package wacc.ast.codegen
+package wacc.codegen
 
 import kotlin.math.max
 import kotlin.math.min

@@ -1,4 +1,4 @@
-package wacc.ast.codegen.types
+package wacc.codegen.types
 
 sealed class Section {
     data class DataSection(val data: List<InitializedDatum>) : Section()

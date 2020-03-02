@@ -1,4 +1,4 @@
-package wacc.ast.codegen.types
+package wacc.codegen.types
 
 sealed class Register(private val display: String) {
     override fun toString(): String = display
