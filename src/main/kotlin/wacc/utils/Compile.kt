@@ -1,4 +1,4 @@
-package wacc.cli
+package wacc.utils
 
 import WaccLexer
 import WaccParser
@@ -15,8 +15,6 @@ import wacc.ast.codegen.getAsm
 import wacc.ast.visitors.ProgramVisitor
 import wacc.checker.SyntaxErrorListener
 import wacc.checker.checkSemantics
-import wacc.utils.Logging
-import wacc.utils.logger
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
         mixinStandardHelpOptions = true, version = [wacc.VERSION])

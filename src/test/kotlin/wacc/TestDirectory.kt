@@ -6,7 +6,7 @@ import org.apache.commons.io.FilenameUtils
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.rules.ErrorCollector
 import picocli.CommandLine
-import wacc.cli.Compile
+import wacc.utils.Compile
 import wacc.utils.Logging
 import wacc.utils.logger
 
