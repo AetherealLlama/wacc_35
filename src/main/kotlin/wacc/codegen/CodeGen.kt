@@ -109,25 +109,14 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             Push(listOf(LinkRegister)) +
             stat.genCodeWithNewScope(statCtx) +
             Pop(listOf(ProgramCounter)))
+
+    // TODO(tudor): implement dependency retrieval from builtins
     val strings = global.strings.map {
-        val newIt = it.removeSurrounding("\"")
-        InitializedString(global.getStringLabel(it), newIt.length, newIt)
-    } + global.usedBuiltins.flatMap { it.depStrings }.toList()
-    global.usedBuiltins.flatMap { it.depFunctions }.forEach {
-        funcs += emptyList<Instruction>() +
-                it.label +
-                it.instructions
+        InitializedString(global.getStringLabel(it), it.length, it)
     }
 
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
-
-val BuiltinFunction.depStrings: Set<InitializedString>
-    get() = (deps.second.map { InitializedString(it.first, it.second.length, it.second) } +
-            deps.first.flatMap { it.depStrings }).toSet()
-
-val BuiltinFunction.depFunctions: Set<Function>
-    get() = (listOf(function) + deps.first.flatMap { it.depFunctions }).toSet()
 
 private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())

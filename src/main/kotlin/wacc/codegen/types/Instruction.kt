@@ -2,6 +2,8 @@ package wacc.codegen.types
 
 import java.lang.IllegalStateException
 
+typealias Function = List<Instruction>
+
 sealed class Instruction {
     data class Op(
         val operation: Operation,
@@ -109,6 +111,8 @@ sealed class Instruction {
         val regs: List<Register>,
         val condition: Condition = Condition.Always
     ) : Instruction() {
+        constructor(vararg regs: Register, condition: Condition = Condition.Always) : this(regs.asList(), condition)
+
         override fun toString(): String = "\t\tPUSH$condition {${regs.joinToString()}}"
     }
 
@@ -116,6 +120,8 @@ sealed class Instruction {
         val regs: List<Register>,
         val condition: Condition = Condition.Always
     ) : Instruction() {
+        constructor(vararg regs: Register, condition: Condition = Condition.Always) : this(regs.asList(), condition)
+
         override fun toString(): String = "\t\tPOP$condition {${regs.joinToString()}}"
     }
 
