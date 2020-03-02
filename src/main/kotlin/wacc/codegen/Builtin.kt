@@ -1,5 +1,6 @@
 package wacc.codegen
 
+import java.lang.IllegalStateException
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
 import wacc.codegen.types.Function
@@ -9,7 +10,6 @@ import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operand.Reg
 import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.Register.*
-import java.lang.IllegalStateException
 
 typealias BuiltinDependency = Pair<List<BuiltinFunction>, List<BuiltinString>>
 typealias BuiltinString = Pair<String, String> // Label to Value

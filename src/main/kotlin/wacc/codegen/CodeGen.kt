@@ -6,7 +6,6 @@ import wacc.ast.BinaryOperator.*
 import wacc.ast.UnaryOperator.*
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
-import wacc.codegen.types.Function
 import wacc.codegen.types.ImmType.*
 import wacc.codegen.types.InitializedDatum.InitializedString
 import wacc.codegen.types.Instruction.*
@@ -110,13 +109,21 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             stat.genCodeWithNewScope(statCtx) +
             Pop(listOf(ProgramCounter)))
 
-    // TODO(tudor): implement dependency retrieval from builtins
-    val strings = global.strings.map {
+    val strings: List<InitializedDatum> = global.strings.map {
         InitializedString(global.getStringLabel(it), it.length, it)
-    }
+    } + global.usedBuiltins.flatMap { it.stringDeps }
+            .map { InitializedString(it.first, it.second.length, it.second) }
+
+    global.usedBuiltins.flatMap { it.functionDeps }.forEach { funcs += it.function }
 
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
+
+private val BuiltinFunction.stringDeps: Set<BuiltinString>
+    get() = (deps.second + deps.first.flatMap { it.stringDeps }).toSet()
+
+private val BuiltinFunction.functionDeps: Set<BuiltinFunction>
+    get() = (listOf(this) + deps.first.flatMap { it.functionDeps }).toSet()
 
 private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())

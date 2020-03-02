@@ -11,10 +11,10 @@ import picocli.CommandLine.*
 import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
 import wacc.RETURN_CODE_SYNTACTIC_ERROR
-import wacc.codegen.getAsm
 import wacc.ast.visitors.ProgramVisitor
 import wacc.checker.SyntaxErrorListener
 import wacc.checker.checkSemantics
+import wacc.codegen.getAsm
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
         mixinStandardHelpOptions = true, version = [wacc.VERSION])
