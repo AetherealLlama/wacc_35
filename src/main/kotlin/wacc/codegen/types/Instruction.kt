@@ -19,7 +19,7 @@ sealed class Instruction {
             when (operation) {
                 is Operation.DivOp -> TODO()
                 else -> {
-                    builder.append("$operation $rd, $rn, ")
+                    builder.append("$operation $rd, $rn, #")
                     builder.append(when (operand) {
                         is Operand.Imm -> operand.value
                         is Operand.Reg -> operand.reg
