@@ -90,10 +90,10 @@ private class CodeGenContext(
 fun Program.getAsm(): String {
     val (data, text) = genCode()
     val builder = StringBuilder()
-    if (!data.data.isEmpty())
-        builder.appendln("\t.data")
+    if (data.data.isNotEmpty())
+        builder.appendln(".data")
     data.data.forEach { builder.appendln(it) }
-    builder.appendln("\t.text")
+    builder.appendln(".text")
     text.instructions.flatten().forEach { builder.appendln(it) }
     return builder.toString()
 }
