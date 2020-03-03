@@ -108,9 +108,9 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             )
 
     val strings: List<InitializedDatum> = global.strings.map {
-        InitializedString(global.getStringLabel(it), it.length, it)
+        InitializedString(global.getStringLabel(it), it)
     } + global.usedBuiltins.flatMap { it.stringDeps }
-            .map { InitializedString(it.first, it.second.length, it.second) }
+            .map { InitializedString(it.first, it.second) }
 
     global.usedBuiltins.flatMap { it.functionDeps }.forEach { funcs += it.function }
 
