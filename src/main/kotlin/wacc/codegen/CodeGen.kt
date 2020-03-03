@@ -14,11 +14,6 @@ import wacc.codegen.types.Operand.Reg
 import wacc.codegen.types.Operation.*
 import wacc.codegen.types.Register.*
 
-/*
-We don't need to worry about register vs. stack allocation when dealing with Stat and AssignRhs
-since there shouldn't be anytime when registers are "reserved" from previous statements.
- */
-
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 11
 
@@ -107,6 +102,7 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             Special.Label("main") +
             Push(listOf(LinkRegister)) +
             stat.genCodeWithNewScope(statCtx) +
+            Load(R0, Imm(0)) +
             Pop(listOf(ProgramCounter)))
 
     val strings: List<InitializedDatum> = global.strings.map {
