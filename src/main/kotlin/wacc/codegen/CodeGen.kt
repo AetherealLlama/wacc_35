@@ -219,13 +219,17 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
             Load(ctx.dst, ctx.dst.op, if (accessor == PairAccessor.FST) null else Imm(4))
     is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
         var totalOffset = 0
-        func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
-            expr.genCode(ctx.withStackOffset(totalOffset)) +
-                    Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true).also {
-                        totalOffset += type.size
-                    } +
-                    BranchLink(Operand.Label(func.label)) +
-                    Op(AddOp, StackPointer, StackPointer, Imm(totalOffset))
+        if (func.params.isNotEmpty()) {
+            func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
+                expr.genCode(ctx.withStackOffset(totalOffset)) +
+                        Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true).also {
+                            totalOffset += type.size
+                        } +
+                        BranchLink(Operand.Label(func.label)) +
+                        Op(AddOp, StackPointer, StackPointer, Imm(totalOffset))
+            }
+        } else {
+            listOf(BranchLink(Operand.Label(func.label)))
         }
     }
 }
