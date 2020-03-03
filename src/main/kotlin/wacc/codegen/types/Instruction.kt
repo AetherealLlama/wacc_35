@@ -77,8 +77,12 @@ sealed class Instruction {
         val condition: Condition = Condition.Always
     ) : Instruction() {
         override fun toString(): String {
-            val displayOffset = offset?.let { ", ${if (plus) "" else "-" }$it" } ?: ""
-            return "\tSTR$condition $rd [$rn$displayOffset]${if (moveReg) "!" else ""}"
+            return "\tSTR$condition$access $rd, [$rn" + when (offset) {
+                is Operand.Imm -> if (offset.value == 0) "" else ", #${offset.value}"
+                is Operand.Reg -> ", " + if (plus) "" else "-" + "${offset.reg}"
+                is Operand.Label -> throw IllegalStateException()
+                null -> ""
+            } + "]"
         }
     }
 
