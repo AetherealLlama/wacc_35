@@ -100,10 +100,12 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     funcs += (emptyList<Instruction>() +
             Special.Global("main") +
             Special.Label("main") +
-            Push(listOf(LinkRegister)) +
+            Push(LinkRegister) +
             stat.genCodeWithNewScope(statCtx) +
             Load(R0, Imm(0)) +
-            Pop(listOf(ProgramCounter)))
+            Pop(ProgramCounter) +
+            Special.Ltorg
+            )
 
     val strings: List<InitializedDatum> = global.strings.map {
         InitializedString(global.getStringLabel(it), it.length, it)
@@ -347,7 +349,7 @@ private fun Stat.genCodeWithNewScope(ctx: CodeGenContext, extraVars: List<Pair<S
     val pre = Op(SubOp, StackPointer, StackPointer, Imm(vars.offset))
     val post = Op(AddOp, StackPointer, StackPointer, Imm(vars.offset))
     return emptyList<Instruction>() +
-            if (vars.isEmpty()) emptyList() else listOf(pre) +
+            (if (vars.isEmpty()) emptyList() else listOf(pre)) +
                     genCode(ctx.withNewScope(vars)) +
                     if (vars.isEmpty()) emptyList() else listOf(post)
 }
