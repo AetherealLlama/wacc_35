@@ -15,19 +15,14 @@ sealed class Instruction {
         val setCondCodes: Boolean = false
     ) : Instruction() {
         override fun toString(): String {
-            val builder = StringBuilder("\t")
-            when (operation) {
+            return "\t" + when (operation) {
                 is Operation.DivOp -> TODO()
-                else -> {
-                    builder.append("$operation $rd, $rn, #")
-                    builder.append(when (operand) {
-                        is Operand.Imm -> operand.value
-                        is Operand.Reg -> operand.reg
-                        is Operand.Label -> throw IllegalStateException()
-                    })
+                else -> "$operation$condition $rd, $rn, " + when (operand) {
+                    is Operand.Imm -> "#${operand.value}"
+                    is Operand.Reg -> operand.reg
+                    is Operand.Label -> throw IllegalStateException()
                 }
             }
-            return builder.toString()
         }
     }
 
