@@ -17,7 +17,8 @@ sealed class Instruction {
         override fun toString(): String {
             return "\t" + when (operation) {
                 is Operation.DivOp -> TODO()
-                else -> "$operation$condition $rd, $rn, " + when (operand) {
+                is Operation.ModOp -> TODO()
+                else -> "$operation${if (setCondCodes) "S" else ""}$condition $rd, $rn, " + when (operand) {
                     is Operand.Imm -> "#${operand.value}"
                     is Operand.Reg -> operand.reg
                     is Operand.Label -> throw IllegalStateException()
