@@ -1,5 +1,6 @@
 package wacc.codegen
 
+import java.lang.IllegalStateException
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
 import wacc.codegen.types.Function
@@ -9,7 +10,6 @@ import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operand.Reg
 import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.Register.*
-import java.lang.IllegalStateException
 
 typealias BuiltinDependency = Pair<List<BuiltinFunction>, List<BuiltinString>>
 typealias BuiltinString = Pair<String, String> // Label to Value
@@ -133,7 +133,7 @@ val throwRuntimeError: BuiltinFunction = BuiltinFunction(listOf(
         BranchLink(Operand.Label("exit"))
 ), listOf(printString) to emptyList())
 
-val overflowErrorString: BuiltinString = "__s_overflow_error" to "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n"
+val overflowErrorString: BuiltinString = "__s_overflow_error" to "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n"
 val throwOverflowError: BuiltinFunction = BuiltinFunction(listOf(
         Label("__f_throw_overflow_error"),
         Load(R0, overflowErrorString.label),
@@ -144,8 +144,8 @@ val throwOverflowError: BuiltinFunction = BuiltinFunction(listOf(
 
 // <editor-fold desc="memory stuff">
 
-val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\\n"
-val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\\n"
+val negativeArrayIndexString: BuiltinString = "__s_array_index_negative" to "ArrayIndexOutOfBoundsError: negative index\n"
+val arrayIndexTooLargeString: BuiltinString = "__s_array_index_too_large" to "ArrayIndexOutOfBoundsError: index too large\n"
 val checkArrayBounds: BuiltinFunction = BuiltinFunction(listOf(
         Label("__f_check_array_bounds"),
         Push(LinkRegister),
@@ -159,7 +159,7 @@ val checkArrayBounds: BuiltinFunction = BuiltinFunction(listOf(
         Pop(ProgramCounter)
 ), listOf(throwRuntimeError) to listOf(negativeArrayIndexString, arrayIndexTooLargeString))
 
-val checkNullPointerString: BuiltinString = "__s_check_null_pointer" to "NullReferenceError: dereference a null reference\\n"
+val checkNullPointerString: BuiltinString = "__s_check_null_pointer" to "NullReferenceError: dereference a null reference\n"
 val checkNullPointer: BuiltinFunction = BuiltinFunction(listOf(
         Label("__f_check_null_pointer"),
         Push(LinkRegister),
@@ -169,7 +169,7 @@ val checkNullPointer: BuiltinFunction = BuiltinFunction(listOf(
         Pop(ProgramCounter)
 ), listOf(throwRuntimeError) to listOf(checkNullPointerString))
 
-val nullPointerDereferenceString: BuiltinString = "__s_null_pointer_deref" to "NullReferenceError: dereference a null reference\\n"
+val nullPointerDereferenceString: BuiltinString = "__s_null_pointer_deref" to "NullReferenceError: dereference a null reference\n"
 val freePair: BuiltinFunction = BuiltinFunction(listOf(
         Label("__f_free_pair"),
         Push(LinkRegister),

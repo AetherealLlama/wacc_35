@@ -1,13 +1,20 @@
 package wacc.codegen.types
 
 sealed class InitializedDatum {
-    data class InitializedString(val label: String, val length: Int, val ascii: String) : InitializedDatum() {
+    data class InitializedString(val label: String, val ascii: String) : InitializedDatum() {
         override fun toString(): String {
-            val builder = StringBuilder()
-            builder.append("$label:\n")
-            builder.append("\t.word ${length + 1}\n")
-            builder.append("\t.ascii \"$ascii\\0\"")
-            return builder.toString()
+            return "$label:\n" +
+                    "\t.word ${ascii.length + 1}\n" +
+                    "\t.ascii \"${ascii.unescaped}\\0\""
         }
     }
 }
+
+private val String.unescaped: String
+    get() = this.fold("") { acc, c ->
+        when (c) {
+            '\n' -> "$acc\\n"
+            '\t' -> "$acc\\t"
+            else -> "$acc$c"
+        }
+    }

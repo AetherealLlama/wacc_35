@@ -6,7 +6,6 @@ import wacc.ast.BinaryOperator.*
 import wacc.ast.UnaryOperator.*
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
-import wacc.codegen.types.Function
 import wacc.codegen.types.ImmType.*
 import wacc.codegen.types.InitializedDatum.InitializedString
 import wacc.codegen.types.Instruction.*
@@ -14,11 +13,6 @@ import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operand.Reg
 import wacc.codegen.types.Operation.*
 import wacc.codegen.types.Register.*
-
-/*
-We don't need to worry about register vs. stack allocation when dealing with Stat and AssignRhs
-since there shouldn't be anytime when registers are "reserved" from previous statements.
- */
 
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 11
@@ -91,10 +85,10 @@ private class CodeGenContext(
 fun Program.getAsm(): String {
     val (data, text) = genCode()
     val builder = StringBuilder()
-    if (!data.data.isEmpty())
-        builder.appendln("\t.data")
+    if (data.data.isNotEmpty())
+        builder.appendln(".data")
     data.data.forEach { builder.appendln(it) }
-    builder.appendln("\t.text")
+    builder.appendln(".text")
     text.instructions.flatten().forEach { builder.appendln(it) }
     return builder.toString()
 }
@@ -106,25 +100,37 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     funcs += (emptyList<Instruction>() +
             Special.Global("main") +
             Special.Label("main") +
-            Push(listOf(LinkRegister)) +
+            Push(LinkRegister) +
             stat.genCodeWithNewScope(statCtx) +
-            Pop(listOf(ProgramCounter)))
+            Load(R0, Imm(0)) +
+            Pop(ProgramCounter) +
+            Special.Ltorg
+            )
 
-    // TODO(tudor): implement dependency retrieval from builtins
-    val strings = global.strings.map {
-        InitializedString(global.getStringLabel(it), it.length, it)
-    }
+    val strings: List<InitializedDatum> = global.strings.map {
+        InitializedString(global.getStringLabel(it), it)
+    } + global.usedBuiltins.flatMap { it.stringDeps }
+            .map { InitializedString(it.first, it.second) }
+
+    global.usedBuiltins.flatMap { it.functionDeps }.forEach { funcs += it.function }
 
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
 
+private val BuiltinFunction.stringDeps: Set<BuiltinString>
+    get() = (deps.second + deps.first.flatMap { it.stringDeps }).toSet()
+
+private val BuiltinFunction.functionDeps: Set<BuiltinFunction>
+    get() = (listOf(this) + deps.first.flatMap { it.functionDeps }).toSet()
+
 private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
     return emptyList<Instruction>() +
-            Special.Label(this.label) +
-            Push(listOf(LinkRegister)) +
+            Special.Label(label) +
+            Push(LinkRegister) +
             stat.genCodeWithNewScope(ctx, params.map { it.name to it.type }) +
-            Pop(listOf(ProgramCounter))
+            Pop(ProgramCounter) +
+            Special.Ltorg
 }
 
 private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
@@ -214,13 +220,17 @@ private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (th
             Load(ctx.dst, ctx.dst.op, if (accessor == PairAccessor.FST) null else Imm(4))
     is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
         var totalOffset = 0
-        func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
-            expr.genCode(ctx.withStackOffset(totalOffset)) +
-                    Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true).also {
-                        totalOffset += type.size
-                    } +
-                    BranchLink(Operand.Label(func.label)) +
-                    Op(AddOp, StackPointer, StackPointer, Imm(totalOffset))
+        if (func.params.isNotEmpty()) {
+            func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
+                expr.genCode(ctx.withStackOffset(totalOffset)) +
+                        Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true).also {
+                            totalOffset += type.size
+                        } +
+                        BranchLink(Operand.Label(func.label)) +
+                        Op(AddOp, StackPointer, StackPointer, Imm(totalOffset))
+            }
+        } else {
+            listOf(BranchLink(Operand.Label(func.label)))
         }
     }
 }
@@ -344,7 +354,7 @@ private fun Stat.genCodeWithNewScope(ctx: CodeGenContext, extraVars: List<Pair<S
     val pre = Op(SubOp, StackPointer, StackPointer, Imm(vars.offset))
     val post = Op(AddOp, StackPointer, StackPointer, Imm(vars.offset))
     return emptyList<Instruction>() +
-            if (vars.isEmpty()) emptyList() else listOf(pre) +
+            (if (vars.isEmpty()) emptyList() else listOf(pre)) +
                     genCode(ctx.withNewScope(vars)) +
                     if (vars.isEmpty()) emptyList() else listOf(post)
 }
