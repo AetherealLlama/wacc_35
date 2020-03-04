@@ -23,7 +23,7 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
                 WaccLexer.BOOLLITER ->
                     return Expr.Literal.BoolLiteral(ctx.pos, ctx.lit.text == "true")
                 WaccLexer.CHARLITER -> return Expr.Literal.CharLiteral(ctx.pos, ctx.lit.text[0])
-                WaccLexer.STRLITER -> return Expr.Literal.StringLiteral(ctx.pos, ctx.lit.text)
+                WaccLexer.STRLITER -> return Expr.Literal.StringLiteral(ctx.pos, ctx.lit.text.removeSurrounding("\""))
                 WaccLexer.PAIRLITER -> return Expr.Literal.PairLiteral(ctx.pos)
             }
         }
