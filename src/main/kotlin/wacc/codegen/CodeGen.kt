@@ -89,6 +89,7 @@ fun Program.getAsm(): String {
         builder.appendln(".data")
     data.data.forEach { builder.appendln(it) }
     builder.appendln(".text")
+    builder.appendln(".global main")
     text.instructions.flatten().forEach { builder.appendln(it) }
     return builder.toString()
 }
@@ -98,7 +99,6 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val funcs = funcs.map { it.codeGen(global) }.toMutableList()
     val statCtx = CodeGenContext(global, 0, emptyList())
     funcs += (emptyList<Instruction>() +
-            Special.Global("main") +
             Special.Label("main") +
             Push(LinkRegister) +
             stat.genCodeWithNewScope(statCtx) +
