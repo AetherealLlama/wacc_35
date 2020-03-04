@@ -126,10 +126,11 @@ private val BuiltinFunction.functionDeps: Set<BuiltinFunction>
 private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
     return emptyList<Instruction>() +
-            Special.Label(this.label) +
-            Push(listOf(LinkRegister)) +
+            Special.Label(label) +
+            Push(LinkRegister) +
             stat.genCodeWithNewScope(ctx, params.map { it.name to it.type }) +
-            Pop(listOf(ProgramCounter))
+            Pop(ProgramCounter) +
+            Special.Ltorg
 }
 
 private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
