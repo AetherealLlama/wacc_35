@@ -101,7 +101,7 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     funcs += (emptyList<Instruction>() +
             Special.Label("main") +
             Push(LinkRegister) +
-            stat.genCodeWithNewScope(statCtx) +
+            mutableListOf<Instruction>().also { stat.genCodeWithNewScope(statCtx, it) } +
             Load(R0, Imm(0)) +
             Pop(ProgramCounter) +
             Special.Ltorg
@@ -139,8 +139,6 @@ private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
 
 // <editor-fold desc="`Stat` code gen">
 
-private fun Stat.Skip.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {}
-
 private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
     instrs.add(Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name))))
@@ -159,8 +157,8 @@ private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instructi
     instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(0)))
     instrs.add(Move(R0, ctx.dst.op))
     when (type) {
-        is Type.BaseType.TypeInt -> ctx.branchBuiltin(instrs, readInt)
-        is Type.BaseType.TypeChar -> ctx.branchBuiltin(instrs, readChar)
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(readInt, instrs)
+        is Type.BaseType.TypeChar -> ctx.branchBuiltin(readChar, instrs)
         else -> throw IllegalStateException()
     }
     instrs.add(Load(ctx.dst, StackPointer.op))
@@ -169,7 +167,7 @@ private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instructi
 private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     expr.genCode(ctx, instrs)
     instrs.add(Move(R0, ctx.dst.op))
-    ctx.branchBuiltin(instrs, freePair)
+    ctx.branchBuiltin(freePair, instrs)
 }
 
 private fun Stat.Return.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
@@ -189,22 +187,22 @@ private fun Stat.Print.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
     instrs.add(Move(R0, ctx.dst.op))
 
     when(val type = this.type) {
-        is Type.BaseType.TypeInt -> ctx.branchBuiltin(instrs, printInt)
-        is Type.BaseType.TypeBool -> ctx.branchBuiltin(instrs, printBool)
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(printInt, instrs)
+        is Type.BaseType.TypeBool -> ctx.branchBuiltin(printBool, instrs)
         is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))
-        is Type.BaseType.TypeString -> ctx.branchBuiltin(instrs, printString)
+        is Type.BaseType.TypeString -> ctx.branchBuiltin(printString, instrs)
         is Type.ArrayType -> when (type.type) {
-            is Type.BaseType.TypeChar -> ctx.branchBuiltin(instrs, printString)
-            else -> ctx.branchBuiltin(instrs, printReference)
+            is Type.BaseType.TypeChar -> ctx.branchBuiltin(printString, instrs)
+            else -> ctx.branchBuiltin(printReference, instrs)
         }
-        is Type.PairType -> ctx.branchBuiltin(instrs, printReference)
+        is Type.PairType -> ctx.branchBuiltin(printReference, instrs)
         else -> throw IllegalStateException()
     }
 }
 
 private fun Stat.Println.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     Stat.Print(pos, expr).also { it.type = type }.genCode(ctx, instrs) // Reuse code gen for print
-    ctx.branchBuiltin(instrs, println)
+    ctx.branchBuiltin(printLn, instrs)
 }
 
 private fun Stat.IfThenElse.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
@@ -243,8 +241,21 @@ private fun Stat.Compose.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
     stat2.genCode(ctx, instrs)
 }
 
-private fun Stat.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    throw NotImplementedError("`Stat` code gen should be handled by overloaded extension funcs!")
+// Delegates code gen to more specific functions
+private fun Stat.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) = when (this) {
+    is Stat.Skip -> Unit
+    is Stat.AssignNew -> genCode(ctx, instrs)
+    is Stat.Assign -> genCode(ctx, instrs)
+    is Stat.Read -> genCode(ctx, instrs)
+    is Stat.Free -> genCode(ctx, instrs)
+    is Stat.Return -> genCode(ctx, instrs)
+    is Stat.Exit -> genCode(ctx, instrs)
+    is Stat.IfThenElse -> genCode(ctx, instrs)
+    is Stat.WhileDo -> genCode(ctx, instrs)
+    is Stat.Begin -> genCode(ctx, instrs)
+    is Stat.Compose -> genCode(ctx, instrs)
+    is Stat.Print -> genCode(ctx, instrs)
+    is Stat.Println -> genCode(ctx, instrs)
 }
 
 // </editor-fold>
@@ -285,7 +296,7 @@ private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<
 
     expr.genCode(ctx, instrs)
     instrs.add(Move(R0, ctx.dst.op))
-    ctx.branchBuiltin(instrs, checkNullPointer)
+    ctx.branchBuiltin(checkNullPointer, instrs)
     instrs.add(Load(ctx.dst, ctx.dst.op, offset))
 }
 
@@ -305,101 +316,152 @@ private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Inst
     }
 }
 
-private fun AssignRhs.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    throw NotImplementedError("`AssignRhs` code gen should be handled by overloaded extension funcs!")
+// Delegates code gen to more specific functions
+private fun AssignRhs.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) = when (this) {
+    is AssignRhs.Expression -> genCode(ctx, instrs)
+    is AssignRhs.ArrayLiteral -> genCode(ctx, instrs)
+    is AssignRhs.Newpair -> genCode(ctx, instrs)
+    is AssignRhs.PairElem -> genCode(ctx, instrs)
+    is AssignRhs.Call -> genCode(ctx, instrs)
 }
 
 // </editor-fold>
 
 
-private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
-    return when (this) {
-        is Expr.Literal.IntLiteral ->
-            if (value in 0..255) listOf(Move(ctx.dst, Imm(value.toInt())))
-            else listOf(Load(ctx.dst, Imm(value.toInt())))
-        is Expr.Literal.BoolLiteral -> listOf(Move(ctx.dst, Imm(if (value) 1 else 0, BOOL)))
-        is Expr.Literal.CharLiteral -> listOf(Move(ctx.dst, Imm(value.toInt(), CHAR)))
-        is Expr.Literal.StringLiteral -> listOf(Load(ctx.dst, Operand.Label(ctx.global.getStringLabel(value))))
-        is Expr.Literal.PairLiteral -> throw IllegalStateException()
-        is Expr.Ident -> listOf(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
-        is Expr.ArrayElem -> emptyList<Instruction>() +
-                Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))) + // get variable address
-                exprs.flatMap { expr ->
-                    emptyList<Instruction>() +
-                            (ctx.takeReg()?.let { (_, ctx2) ->
-                                expr.genCode(ctx2) // Register implementation
-                            } ?: let {
-                                emptyList<Instruction>() + // Stack implementation
-                                        Push(listOf(ctx.dst)) + // save array pointer
-                                        expr.genCode(ctx) +
-                                        Move(ctx.nxt, ctx.dst.op) + // nxt = array index
-                                        Pop(listOf(ctx.dst)) // dst = array pointer
-                            }) + // nxt = array index
-                            Load(ctx.dst, ctx.dst.op) + // get address of array
-                            Move(R0, ctx.nxt.op) +
-                            Move(R1, ctx.dst.op) +
-                            ctx.branchBuiltin(checkArrayBounds) + // check array bounds
-                            Op(AddOp, ctx.dst, ctx.dst, Imm(4)) + // compute address of desired array elem
-                            Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, BarrelShift(2, BarrelShift.Type.LSL))
-                } + Load(ctx.dst, ctx.dst.op) // get array elem
-        is Expr.UnaryOp -> when (operator) {
-            BANG -> expr.genCode(ctx) + Op(NegateOp, ctx.dst, ctx.dst, ctx.dst.op)
-            MINUS -> expr.genCode(ctx) + Op(RevSubOp, ctx.dst, ctx.dst, Imm(0))
-            LEN -> expr.genCode(ctx) + Load(ctx.dst, ctx.dst.op)
-            ORD, CHR -> expr.genCode(ctx) // Chars and ints should be represented the same way; ignore conversion
-        }
-        is Expr.BinaryOp -> {
-            val instrs = ctx.takeRegs(2)?.let { (_, ctx2) -> // Register implementation
-                if (expr1.weight <= expr2.weight) {
-                    expr1.genCode(ctx2.withRegs(ctx.dst, ctx.nxt)) + expr2.genCode(ctx2.withRegs(ctx.nxt))
-                } else {
-                    expr2.genCode(ctx2.withRegs(ctx.nxt, ctx.dst)) + expr2.genCode(ctx2.withRegs(ctx.dst))
-                }
-            } ?: (emptyList<Instruction>() + // Stack implementation
-                    expr1.genCode(ctx) +
-                    Push(listOf(ctx.dst)) +
-                    expr2.genCode(ctx) +
-                    Move(ctx.nxt, ctx.dst.op) +
-                    Pop(listOf(ctx.dst))
-                    )
-            val regs = ctx.dst to ctx.nxt
-            instrs + when (operator) {
-                MUL -> emptyList<Instruction>() +
-                        LongMul(ctx.dst, ctx.nxt, ctx.dst, ctx.nxt) +
-                        Compare(ctx.nxt, ctx.dst.op, BarrelShift(31, BarrelShift.Type.ASR)) +
-                        ctx.branchBuiltin(throwOverflowError, Always)
-                DIV -> listOf(Op(DivOp(), ctx.dst, ctx.dst, ctx.nxt.op))
-                MOD -> listOf(Op(ModOp(), ctx.dst, ctx.dst, ctx.nxt.op))
-                ADD -> emptyList<Instruction>() +
-                        Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, setCondCodes = true) +
-                        ctx.branchBuiltin(throwOverflowError, Overflow)
-                SUB -> listOf(Op(SubOp, ctx.dst, ctx.dst, ctx.nxt.op))
-                GT -> regs.assignBool(SignedGreaterThan)
-                GTE -> regs.assignBool(SignedGreaterOrEqual)
-                LT -> regs.assignBool(SignedLess)
-                LTE -> regs.assignBool(SignedLessOrEqual)
-                EQ -> regs.assignBool(Equal)
-                NEQ -> regs.assignBool(NotEqual)
-                LAND -> listOf(Op(AndOp, ctx.dst, ctx.dst, ctx.nxt.op))
-                LOR -> listOf(Op(OrOp, ctx.dst, ctx.dst, ctx.nxt.op))
-            }
-        }
+// <editor-fold desc="`Expr` code gen">
+
+private fun Expr.Literal.IntLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    if (value in 0..255)
+        instrs.add(Move(ctx.dst, Imm(value.toInt())))
+    else
+        instrs.add(Load(ctx.dst, Imm(value.toInt())))
+}
+
+private fun Expr.Literal.BoolLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Move(ctx.dst, Imm(if (value) 1 else 0, BOOL)))
+}
+
+private fun Expr.Literal.CharLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Move(ctx.dst, Imm(value.toInt(), CHAR)))
+}
+
+private fun Expr.Literal.StringLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Load(ctx.dst, Operand.Label(ctx.global.getStringLabel(value))))
+}
+
+private fun Expr.Literal.PairLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    throw IllegalStateException()
+}
+
+private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
+}
+
+private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))))
+    for (expr in exprs) {
+        ctx.takeReg()?.let{ (_, ctx2) ->
+            expr.genCode(ctx2, instrs) // Register implementation
+        } ?: let { // Stack implementation
+            instrs.add(Push(listOf(ctx.dst))) // save array pointer
+            expr.genCode(ctx, instrs)
+            instrs.add(Move(ctx.nxt, ctx.dst.op)) // nxt = array index
+            instrs.add(Pop(listOf(ctx.dst))) // dst = array pointer
+        } // nxt = array index
+        instrs.add(Load(ctx.dst, ctx.dst.op)) // get address of array
+        instrs.add(Move(R0, ctx.nxt.op))
+        instrs.add(Move(R1, ctx.dst.op))
+        ctx.branchBuiltin(checkArrayBounds, instrs) // check array bounds
+        instrs.add(Op(AddOp, ctx.dst, ctx.dst, Imm(4))) // compute address of desired array elem
+        instrs.add(Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, BarrelShift(2, BarrelShift.Type.LSL)))
+    }
+    instrs.add(Load(ctx.dst, ctx.dst.op))
+}
+
+private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+    when (operator) {
+        BANG -> instrs.add(Op(NegateOp, ctx.dst, ctx.dst, ctx.dst.op))
+        MINUS -> Op(RevSubOp, ctx.dst, ctx.dst, Imm(0))
+        LEN -> Load(ctx.dst, ctx.dst.op)
+        ORD, CHR -> {} // Chars and ints should be represented the same way; ignore conversion
     }
 }
 
-private fun Pair<Register, Register>.assignBool(cond: Condition) = listOf(
-        Compare(first, second.op),
-        Move(first, Imm(1, BOOL), cond),
-        Move(first, Imm(0, BOOL), cond.inverse)
-)
+private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    ctx.takeRegs(2)?.let { (_, ctx2) -> // Register implementation
+        if (expr1.weight <= expr2.weight) {
+            expr1.genCode(ctx2.withRegs(ctx.dst, ctx.nxt), instrs)
+            expr2.genCode(ctx2.withRegs(ctx.nxt), instrs)
+        } else {
+            expr2.genCode(ctx2.withRegs(ctx.nxt, ctx.dst), instrs)
+            expr1.genCode(ctx2.withRegs(ctx.dst), instrs)
+        }
+    } ?: let { // Stack implementation
+        expr1.genCode(ctx, instrs)
+        expr2.genCode(ctx, instrs)
+        instrs.add(Move(ctx.nxt, ctx.dst.op))
+        instrs.add(Pop(listOf(ctx.dst)))
+    }
 
-private fun CodeGenContext.malloc(size: Int): List<Instruction> = listOf(
-        Load(R0, Imm(size)),
-        BranchLink(Operand.Label("malloc"))
-) + moveR0(dst)
+    val regs = ctx.dst to ctx.nxt
 
-private fun moveR0(reg: Register): List<Instruction> =
-        if (reg.toString() == R0.toString()) emptyList() else listOf(Move(reg, R0.op))
+    instrs + when (operator) {
+        MUL -> {
+            instrs.add(LongMul(ctx.dst, ctx.nxt, ctx.dst, ctx.nxt))
+            instrs.add(Compare(ctx.nxt, ctx.dst.op, BarrelShift(31, BarrelShift.Type.ASR)))
+            ctx.branchBuiltin(throwOverflowError, instrs, cond = Always)
+        }
+        DIV -> instrs.add(Op(DivOp(), ctx.dst, ctx.dst, ctx.nxt.op))
+        MOD -> instrs.add(Op(ModOp(), ctx.dst, ctx.dst, ctx.nxt.op))
+        ADD -> {
+            instrs.add(Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, setCondCodes = true))
+            ctx.branchBuiltin(throwOverflowError, instrs, cond = Overflow)
+        }
+        SUB -> instrs.add(Op(SubOp, ctx.dst, ctx.dst, ctx.nxt.op))
+        GT -> regs.assignBool(SignedGreaterThan, instrs)
+        GTE -> regs.assignBool(SignedGreaterOrEqual, instrs)
+        LT -> regs.assignBool(SignedLess, instrs)
+        LTE -> regs.assignBool(SignedLessOrEqual, instrs)
+        EQ -> regs.assignBool(Equal, instrs)
+        NEQ -> regs.assignBool(NotEqual, instrs)
+        LAND -> instrs.add(Op(AndOp, ctx.dst, ctx.dst, ctx.nxt.op))
+        LOR -> instrs.add(Op(OrOp, ctx.dst, ctx.dst, ctx.nxt.op))
+    }
+}
+
+// Delegates code gen to more specific functions
+private fun Expr.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) = when (this) {
+    is Expr.Literal.IntLiteral -> genCode(ctx, instrs)
+    is Expr.Literal.BoolLiteral -> genCode(ctx, instrs)
+    is Expr.Literal.CharLiteral -> genCode(ctx, instrs)
+    is Expr.Literal.StringLiteral -> genCode(ctx, instrs)
+    is Expr.Literal.PairLiteral -> genCode(ctx, instrs)
+    is Expr.Ident -> genCode(ctx, instrs)
+    is Expr.ArrayElem -> genCode(ctx, instrs)
+    is Expr.UnaryOp -> genCode(ctx, instrs)
+    is Expr.BinaryOp -> genCode(ctx, instrs)
+}
+
+// </editor-fold>
+
+
+private fun Pair<Register, Register>.assignBool(cond: Condition, instrs: MutableList<Instruction>) {
+    instrs.add(Compare(first, second.op))
+    instrs.add(Move(first, Imm(1, BOOL), cond))
+    instrs.add(Move(first, Imm(0, BOOL), cond.inverse))
+}
+
+private fun CodeGenContext.malloc(size: Int, instrs: MutableList<Instruction>) {
+    instrs.add(Load(R0, Imm(size)))
+    instrs.add(BranchLink(Operand.Label("malloc")))
+    moveR0To(dst, instrs)
+}
+
+private fun moveR0To(reg: Register, instrs: MutableList<Instruction>){
+    if (reg.toString() != R0.toString())
+        instrs.add(Move(reg, R0.op))
+}
 
 private val Condition.inverse
     get() = when (this) {
@@ -435,7 +497,7 @@ private fun Stat.genCodeWithNewScope(
 
     if (vars.isNotEmpty())
         instrs.add(Op(SubOp, StackPointer, StackPointer, Imm(vars.offset)))
-    genCode(ctx, instrs)
+    genCode(ctx.withNewScope(vars), instrs)
     if (vars.isNotEmpty())
         instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(vars.offset)))
 }
@@ -450,8 +512,8 @@ val Func.label: String
     get() = "f_$name"
 
 private fun CodeGenContext.branchBuiltin(
-        instrs: MutableList<Instruction>,
         f: BuiltinFunction,
+        instrs: MutableList<Instruction>,
         cond: Condition = Always
 ) {
     instrs.add(BranchLink(f.label, condition = cond))
