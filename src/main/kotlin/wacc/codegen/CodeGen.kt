@@ -20,9 +20,9 @@ private const val MAX_USABLE_REG = 11
 val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
 internal class GlobalCodeGenData(
-    val program: Program,
-    var strings: List<String> = emptyList(),
-    var labelCount: Int = 0
+        val program: Program,
+        var strings: List<String> = emptyList(),
+        private var labelCount: Int = 0
 ) {
     fun getLabel() = "L${labelCount++}"
 
@@ -34,10 +34,10 @@ internal class GlobalCodeGenData(
 }
 
 internal class CodeGenContext(
-    val global: GlobalCodeGenData,
-    val stackOffset: Int,
-    val scopes: List<List<Pair<String, Type>>>,
-    val availableRegs: List<Register> = usableRegs
+        val global: GlobalCodeGenData,
+        private val stackOffset: Int,
+        private val scopes: List<List<Pair<String, Type>>>,
+        private val availableRegs: List<Register> = usableRegs
 ) {
     fun offsetOfIdent(ident: String): Int {
         var offset = stackOffset

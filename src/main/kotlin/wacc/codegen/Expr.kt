@@ -1,9 +1,9 @@
-package wacc.codegen.types
+package wacc.codegen
 
 import wacc.ast.BinaryOperator.*
 import wacc.ast.Expr
 import wacc.ast.UnaryOperator.*
-import wacc.codegen.*
+import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
 import wacc.codegen.types.ImmType.BOOL
 import wacc.codegen.types.ImmType.CHAR

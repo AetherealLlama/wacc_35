@@ -1,12 +1,14 @@
-package wacc.codegen.types
+package wacc.codegen
 
 import wacc.ast.AssignRhs
 import wacc.ast.PairAccessor
 import wacc.ast.Param
-import wacc.codegen.*
+import wacc.codegen.types.Instruction
 import wacc.codegen.types.Instruction.*
+import wacc.codegen.types.Operand
 import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operation.AddOp
+import wacc.codegen.types.R0
 import wacc.codegen.types.Register.StackPointer
 
 

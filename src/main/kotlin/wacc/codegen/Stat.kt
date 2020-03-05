@@ -12,7 +12,6 @@ import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.R0
 import wacc.codegen.types.Register.ProgramCounter
 import wacc.codegen.types.Register.StackPointer
-import wacc.codegen.types.genCode
 
 
 private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
