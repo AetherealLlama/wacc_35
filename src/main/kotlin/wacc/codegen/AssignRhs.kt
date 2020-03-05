@@ -56,9 +56,9 @@ private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Inst
             expr.genCode(ctx.withStackOffset(totalOffset), instrs)
             instrs.add(Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true))
             totalOffset += type.size
-            instrs.add(BranchLink(Operand.Label(func.label)))
-            instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(totalOffset)))
         }
+        instrs.add(BranchLink(Operand.Label(func.label)))
+        instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(totalOffset)))
     } else {
         instrs.add(BranchLink(Operand.Label(func.label)))
     }
