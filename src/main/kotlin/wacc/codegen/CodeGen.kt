@@ -96,23 +96,25 @@ fun Program.getAsm(): String {
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
-    val funcs = funcs.map { it.codeGen(global) }.toMutableList()
+    val funcs = funcs.map { it.genCode(global) }.toMutableList()
     val statCtx = CodeGenContext(global, 0, emptyList())
-    funcs += (emptyList<Instruction>() +
+
+    // Assemble the top-level statement
+    val topLevelStat = emptyList<Instruction>() +
             Special.Label("main") +
             Push(LinkRegister) +
             mutableListOf<Instruction>().also { stat.genCodeWithNewScope(statCtx, it) } +
             Load(R0, Imm(0)) +
             Pop(ProgramCounter) +
             Special.Ltorg
-            )
+    funcs.add(topLevelStat)
 
-    val strings: List<InitializedDatum> = global.strings.map {
-        InitializedString(global.getStringLabel(it), it)
-    } + global.usedBuiltins.flatMap { it.stringDeps }
-            .map { InitializedString(it.first, it.second) }
+    // Collect strings from user code and used builtin functions
+    val strings: List<InitializedDatum> = global.strings.map { InitializedString(global.getStringLabel(it), it) } +
+            global.usedBuiltins.flatMap { it.stringDeps }.map { InitializedString(it.first, it.second) }
 
-    global.usedBuiltins.flatMap { it.functionDeps }.forEach { funcs += it.function }
+    // Collect all dependencies on built-in functions
+    funcs.addAll(global.usedBuiltins.flatMap { it.functionDeps }.toSet().map { it.function })
 
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
@@ -123,7 +125,7 @@ private val BuiltinFunction.stringDeps: Set<BuiltinString>
 private val BuiltinFunction.functionDeps: Set<BuiltinFunction>
     get() = (listOf(this) + deps.first.flatMap { it.functionDeps }).toSet()
 
-private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
+private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
     val instrs = mutableListOf<Instruction>()
 
