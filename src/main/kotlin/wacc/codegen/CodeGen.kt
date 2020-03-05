@@ -352,14 +352,18 @@ private val List<Pair<String, Type>>.offset: Int
     get() = sumBy { it.second.size }
 
 // Generates code for a statement, with instructions to adjust the stack pointer to account for the new scope
-private fun Stat.genCodeWithNewScope(ctx: CodeGenContext, extraVars: List<Pair<String, Type>> = emptyList()): List<Instruction> {
+private fun Stat.genCodeWithNewScope(
+        ctx: CodeGenContext,
+        instrs: MutableList<Instruction>,
+        extraVars: List<Pair<String, Type>> = emptyList()
+) {
     val vars = this.vars + extraVars
-    val pre = Op(SubOp, StackPointer, StackPointer, Imm(vars.offset))
-    val post = Op(AddOp, StackPointer, StackPointer, Imm(vars.offset))
-    return emptyList<Instruction>() +
-            (if (vars.isEmpty()) emptyList() else listOf(pre)) +
-                    genCode(ctx.withNewScope(vars)) +
-                    if (vars.isEmpty()) emptyList() else listOf(post)
+
+    if (vars.isNotEmpty())
+        instrs.add(Op(SubOp, StackPointer, StackPointer, Imm(vars.offset)))
+    genCode(ctx, instrs)
+    if (vars.isNotEmpty())
+        instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(vars.offset)))
 }
 
 val Type.size: Int
@@ -371,8 +375,14 @@ val Type.size: Int
 val Func.label: String
     get() = "f_$name"
 
-private fun CodeGenContext.branchBuiltin(f: BuiltinFunction, cond: Condition = Always): Instruction =
-        BranchLink(f.label, condition = cond).also { global.usedBuiltins.add(f) }
+private fun CodeGenContext.branchBuiltin(
+        instrs: MutableList<Instruction>,
+        f: BuiltinFunction,
+        cond: Condition = Always
+) {
+    instrs.add(BranchLink(f.label, condition = cond))
+    global.usedBuiltins.add(f)
+}
 
 private val Register.op: Operand
     get() = Reg(this)
