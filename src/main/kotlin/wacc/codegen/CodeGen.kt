@@ -17,7 +17,7 @@ import wacc.codegen.types.Register.*
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 11
 
-val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
+private val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
 
 internal class GlobalCodeGenData(
         val program: Program,
@@ -119,12 +119,6 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
 
-private val BuiltinFunction.stringDeps: Set<BuiltinString>
-    get() = (deps.second + deps.first.flatMap { it.stringDeps }).toSet()
-
-private val BuiltinFunction.functionDeps: Set<BuiltinFunction>
-    get() = (listOf(this) + deps.first.flatMap { it.functionDeps }).toSet()
-
 private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
     val ctx = CodeGenContext(global, 0, emptyList())
     val instrs = mutableListOf<Instruction>()
@@ -137,6 +131,12 @@ private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
 
     return instrs
 }
+
+private val BuiltinFunction.stringDeps: Set<BuiltinString>
+    get() = (deps.second + deps.first.flatMap { it.stringDeps }).toSet()
+
+private val BuiltinFunction.functionDeps: Set<BuiltinFunction>
+    get() = (listOf(this) + deps.first.flatMap { it.functionDeps }).toSet()
 
 private val List<Pair<String, Type>>.offset: Int
     get() = sumBy { it.second.size }
@@ -156,13 +156,13 @@ internal fun Stat.genCodeWithNewScope(
         instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(vars.offset)))
 }
 
-val Type.size: Int
+internal val Type.size: Int
     get() = when (this) {
         is Type.BaseType.TypeChar -> 1
         else -> 4
     }
 
-val Func.label: String
+internal val Func.label: String
     get() = "f_$name"
 
 internal fun CodeGenContext.branchBuiltin(
