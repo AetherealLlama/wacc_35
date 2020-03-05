@@ -86,6 +86,9 @@ internal class CodeGenContext(
 
     val nxt: Register
         get() = availableRegs[1]
+
+    internal val totalScopeOffset: Int
+        get() = scopes.sumBy { it.sumBy { it.second.size } }
 }
 
 // </editor-fold>
@@ -135,7 +138,10 @@ private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
 
     instrs.add(Special.Label(label))
     instrs.add(Push(LinkRegister))
-    stat.genCodeWithNewScope(ctx, instrs, params.map { it.name to it.type })
+
+    // Skip shifting SP after the function so it can be handled in `return`
+    stat.genCodeWithNewScope(ctx, instrs, params.map { it.name to it.type }, skipPost = true)
+
     instrs.add(Pop(ProgramCounter))
     instrs.add(Special.Ltorg)
 
@@ -159,14 +165,15 @@ private val List<Pair<String, Type>>.offset: Int
 internal fun Stat.genCodeWithNewScope(
     ctx: CodeGenContext,
     instrs: MutableList<Instruction>,
-    extraVars: List<Pair<String, Type>> = emptyList()
+    extraVars: List<Pair<String, Type>> = emptyList(),
+    skipPost: Boolean = false
 ) {
     val vars = this.vars + extraVars
 
     if (vars.isNotEmpty())
         instrs.add(Op(SubOp, StackPointer, StackPointer, Imm(vars.offset)))
     genCode(ctx.withNewScope(vars), instrs)
-    if (vars.isNotEmpty())
+    if (!skipPost && vars.isNotEmpty())
         instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(vars.offset)))
 }
 
