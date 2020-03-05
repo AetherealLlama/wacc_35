@@ -14,10 +14,18 @@ import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.Operation.SubOp
 import wacc.codegen.types.Register.*
 
+
+// <editor-fold desc="Constants">
+
 private const val MIN_USABLE_REG = 4
 private const val MAX_USABLE_REG = 11
 
 private val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(it) }
+
+// </editor-fold>
+
+
+// <editor-fold desc="Context Classes">
 
 internal class GlobalCodeGenData(
         val program: Program,
@@ -82,6 +90,9 @@ internal class CodeGenContext(
         get() = availableRegs[1]
 }
 
+// </editor-fold>
+
+
 fun Program.getAsm(): String {
     val (data, text) = genCode()
     val builder = StringBuilder()
@@ -93,6 +104,9 @@ fun Program.getAsm(): String {
     text.instructions.flatten().forEach { builder.appendln(it) }
     return builder.toString()
 }
+
+
+// <editor-fold desc="Code Generation">
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
@@ -131,6 +145,11 @@ private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
 
     return instrs
 }
+
+// </editor-fold>
+
+
+// <editor-fold desc="Helper functions and properties">
 
 private val BuiltinFunction.stringDeps: Set<BuiltinString>
     get() = (deps.second + deps.first.flatMap { it.stringDeps }).toSet()
@@ -176,3 +195,5 @@ internal fun CodeGenContext.branchBuiltin(
 
 internal val Register.op: Operand
     get() = Reg(this)
+
+// </editor-fold>
