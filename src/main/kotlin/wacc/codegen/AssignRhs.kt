@@ -11,7 +11,6 @@ import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.R0
 import wacc.codegen.types.Register.StackPointer
 
-
 private fun AssignRhs.Expression.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     expr.genCode(ctx, instrs)
 }
@@ -74,11 +73,9 @@ internal fun AssignRhs.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
     is AssignRhs.Call -> genCode(ctx, instrs)
 }
 
-
 private fun CodeGenContext.malloc(size: Int, instrs: MutableList<Instruction>) {
     instrs.add(Load(R0, Imm(size)))
     instrs.add(BranchLink(Operand.Label("malloc")))
     if (dst.toString() != R0.toString())
         instrs.add(Move(dst, R0.op))
 }
-

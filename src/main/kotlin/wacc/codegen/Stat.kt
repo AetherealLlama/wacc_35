@@ -13,7 +13,6 @@ import wacc.codegen.types.R0
 import wacc.codegen.types.Register.ProgramCounter
 import wacc.codegen.types.Register.StackPointer
 
-
 private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
     instrs.add(Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name))))
@@ -61,7 +60,7 @@ private fun Stat.Print.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
     expr.genCode(ctx, instrs)
     instrs.add(Move(R0, ctx.dst.op))
 
-    when(val type = this.type) {
+    when (val type = this.type) {
         is Type.BaseType.TypeInt -> ctx.branchBuiltin(printInt, instrs)
         is Type.BaseType.TypeBool -> ctx.branchBuiltin(printBool, instrs)
         is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))

@@ -12,7 +12,6 @@ import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operation.*
 import wacc.codegen.types.Register.StackPointer
 
-
 private fun Expr.Literal.IntLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     if (value in 0..255)
         instrs.add(Move(ctx.dst, Imm(value.toInt())))
@@ -39,7 +38,7 @@ private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
 private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))))
     for (expr in exprs) {
-        ctx.takeReg()?.let{ (_, ctx2) ->
+        ctx.takeReg()?.let { (_, ctx2) ->
             expr.genCode(ctx2, instrs) // Register implementation
         } ?: let { // Stack implementation
             instrs.add(Push(listOf(ctx.dst))) // save array pointer
@@ -121,7 +120,6 @@ internal fun Expr.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>)
     is Expr.UnaryOp -> genCode(ctx, instrs)
     is Expr.BinaryOp -> genCode(ctx, instrs)
 }
-
 
 private fun Pair<Register, Register>.assignBool(cond: Condition, instrs: MutableList<Instruction>) {
     instrs.add(Compare(first, second.op))

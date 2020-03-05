@@ -14,7 +14,6 @@ import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.Operation.SubOp
 import wacc.codegen.types.Register.*
 
-
 // <editor-fold desc="Constants">
 
 private const val MIN_USABLE_REG = 4
@@ -24,13 +23,12 @@ private val usableRegs = (MIN_USABLE_REG..MAX_USABLE_REG).map { GeneralRegister(
 
 // </editor-fold>
 
-
 // <editor-fold desc="Context Classes">
 
 internal class GlobalCodeGenData(
-        val program: Program,
-        var strings: List<String> = emptyList(),
-        private var labelCount: Int = 0
+    val program: Program,
+    var strings: List<String> = emptyList(),
+    private var labelCount: Int = 0
 ) {
     fun getLabel() = "L${labelCount++}"
 
@@ -42,10 +40,10 @@ internal class GlobalCodeGenData(
 }
 
 internal class CodeGenContext(
-        val global: GlobalCodeGenData,
-        private val stackOffset: Int,
-        private val scopes: List<List<Pair<String, Type>>>,
-        private val availableRegs: List<Register> = usableRegs
+    val global: GlobalCodeGenData,
+    private val stackOffset: Int,
+    private val scopes: List<List<Pair<String, Type>>>,
+    private val availableRegs: List<Register> = usableRegs
 ) {
     fun offsetOfIdent(ident: String): Int {
         var offset = stackOffset
@@ -92,7 +90,6 @@ internal class CodeGenContext(
 
 // </editor-fold>
 
-
 fun Program.getAsm(): String {
     val (data, text) = genCode()
     val builder = StringBuilder()
@@ -104,7 +101,6 @@ fun Program.getAsm(): String {
     text.instructions.flatten().forEach { builder.appendln(it) }
     return builder.toString()
 }
-
 
 // <editor-fold desc="Code Generation">
 
@@ -148,7 +144,6 @@ private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
 
 // </editor-fold>
 
-
 // <editor-fold desc="Helper functions and properties">
 
 private val BuiltinFunction.stringDeps: Set<BuiltinString>
@@ -162,9 +157,9 @@ private val List<Pair<String, Type>>.offset: Int
 
 // Generates code for a statement, with instructions to adjust the stack pointer to account for the new scope
 internal fun Stat.genCodeWithNewScope(
-        ctx: CodeGenContext,
-        instrs: MutableList<Instruction>,
-        extraVars: List<Pair<String, Type>> = emptyList()
+    ctx: CodeGenContext,
+    instrs: MutableList<Instruction>,
+    extraVars: List<Pair<String, Type>> = emptyList()
 ) {
     val vars = this.vars + extraVars
 
@@ -185,9 +180,9 @@ internal val Func.label: String
     get() = "f_$name"
 
 internal fun CodeGenContext.branchBuiltin(
-        f: BuiltinFunction,
-        instrs: MutableList<Instruction>,
-        cond: Condition = Always
+    f: BuiltinFunction,
+    instrs: MutableList<Instruction>,
+    cond: Condition = Always
 ) {
     instrs.add(BranchLink(f.label, condition = cond))
     global.usedBuiltins.add(f)
