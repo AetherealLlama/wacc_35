@@ -136,107 +136,181 @@ private fun Func.codeGen(global: GlobalCodeGenData): List<Instruction> {
     return instrs
 }
 
-private fun Stat.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
-    is Stat.Skip -> emptyList()
-    is Stat.AssignNew -> rhs.genCode(ctx) + Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)))
-    is Stat.Assign -> rhs.genCode(ctx).let { rhsInstrs ->
-        when (lhs) {
-            is AssignLhs.Variable -> rhsInstrs + Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)))
-            is AssignLhs.ArrayElem -> TODO()
-            is AssignLhs.PairElem -> TODO()
-        }
-    }
-    is Stat.Read -> listOf(Op(AddOp, ctx.dst, StackPointer, Imm(0)), Move(R0, ctx.dst.op)) + when (type) {
-        is Type.BaseType.TypeInt -> ctx.branchBuiltin(readInt)
-        is Type.BaseType.TypeChar -> ctx.branchBuiltin(readChar)
-        else -> throw IllegalStateException()
-    } + Load(ctx.dst, StackPointer.op)
-    is Stat.Free -> expr.genCode(ctx) + Move(R0, ctx.dst.op) + ctx.branchBuiltin(freePair)
-    is Stat.Return -> expr.genCode(ctx) + Move(R0, ctx.dst.op) + Pop(listOf(ProgramCounter))
-    is Stat.Exit ->
-        expr.genCode(ctx) + Move(R0, ctx.dst.op) + BranchLink(Operand.Label("exit"))
-    is Stat.Print -> expr.genCode(ctx) + Move(R0, ctx.dst.op) + when (type) {
-        is Type.BaseType.TypeInt -> ctx.branchBuiltin(printInt)
-        is Type.BaseType.TypeBool -> ctx.branchBuiltin(printBool)
-        is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))
-        is Type.BaseType.TypeString -> ctx.branchBuiltin(printString)
-        is Type.ArrayType -> when (type) {
-            is Type.BaseType.TypeChar -> ctx.branchBuiltin(printString)
-            else -> ctx.branchBuiltin(printReference)
-        }
-        is Type.PairType -> ctx.branchBuiltin(printReference)
-        else -> throw IllegalStateException()
-    }
-    is Stat.Println -> Stat.Print(pos, expr).also { it.type = type }.genCode(ctx) + ctx.branchBuiltin(printLn)
-    is Stat.IfThenElse -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
-        emptyList<Instruction>() +
-                expr.genCode(ctx) + // condition
-                Compare(ctx.dst, Imm(0)) +
-                Branch(Operand.Label(label1), Equal) +
-                branch2.genCode(ctx) + // code if false
-                Branch(Operand.Label(label2)) +
-                Special.Label(label1) +
-                branch1.genCode(ctx) + // code if true
-                Special.Label(label2)
-    }
-    is Stat.WhileDo -> (ctx.global.getLabel() to ctx.global.getLabel()).let { (label1, label2) ->
-        emptyList<Instruction>() +
-                Branch(Operand.Label(label1)) +
-                Special.Label(label2) +
-                stat.genCodeWithNewScope(ctx) + // loop body
-                Special.Label(label1) +
-                expr.genCode(ctx) + // loop condition
-                Compare(ctx.dst, Imm(1)) +
-                Branch(Operand.Label(label1), Equal)
-    }
-    is Stat.Begin -> stat.genCodeWithNewScope(ctx) // ignore context from inner scope
-    is Stat.Compose -> stat1.genCode(ctx) + stat2.genCode(ctx)
+
+// <editor-fold desc="`Stat` code gen">
+
+private fun Stat.Skip.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {}
+
+private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    rhs.genCode(ctx, instrs)
+    instrs.add(Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name))))
 }
 
-private fun AssignRhs.genCode(ctx: CodeGenContext): List<Instruction> = when (this) {
-    is AssignRhs.Expression -> expr.genCode(ctx)
-    is AssignRhs.ArrayLiteral -> ctx.takeReg()!!.let { (arrayAddr, innerCtx) ->
-        emptyList<Instruction>() +
-                ctx.malloc((exprs.size + 1) * 4) + // Allocate array
-                exprs.mapIndexed { i, expr ->
-                    expr.genCode(innerCtx) + Store(innerCtx.dst, arrayAddr, Imm((i + 1) * 4))
-                }.flatten() + // Store array values
-                Load(innerCtx.dst, Imm(exprs.size)) +
-                Store(innerCtx.dst, arrayAddr) // Store array length
-    }
-    is AssignRhs.Newpair -> listOf(
-            Load(R0, Imm(8)),
-            BranchLink(Operand.Label("malloc")),
-            Move(ctx.dst, R0.op)
-    ) + ctx.takeReg()!!.let { (pairReg, ctx2) ->
-        listOf((expr1 to null), (expr2 to Imm(4))).flatMap { (expr, offset) ->
-            expr.genCode(ctx2) +
-                    Load(R0, Imm(4)) +
-                    BranchLink(Operand.Label("malloc")) +
-                    Store(ctx2.dst, R0) +
-                    Store(R0, pairReg, offset)
-        }
-    }
-    is AssignRhs.PairElem -> expr.genCode(ctx) +
-            moveR0(ctx.dst) +
-            ctx.branchBuiltin(checkNullPointer) + // Check that the pair isn't null
-            Load(ctx.dst, ctx.dst.op, if (accessor == PairAccessor.FST) null else Imm(4))
-    is AssignRhs.Call -> ctx.global.program.funcs.first { it.name == name }.let { func ->
-        var totalOffset = 0
-        if (func.params.isNotEmpty()) {
-            func.params.map(Param::type).zip(args).reversed().flatMap { (type, expr) ->
-                expr.genCode(ctx.withStackOffset(totalOffset)) +
-                        Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true).also {
-                            totalOffset += type.size
-                        } +
-                        BranchLink(Operand.Label(func.label)) +
-                        Op(AddOp, StackPointer, StackPointer, Imm(totalOffset))
-            }
-        } else {
-            listOf(BranchLink(Operand.Label(func.label)))
-        }
+private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    rhs.genCode(ctx, instrs)
+    when (lhs) {
+        is AssignLhs.Variable -> instrs.add(Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name))))
+        is AssignLhs.ArrayElem -> TODO()
+        is AssignLhs.PairElem -> TODO()
     }
 }
+
+private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(0)))
+    instrs.add(Move(R0, ctx.dst.op))
+    when (type) {
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(instrs, readInt)
+        is Type.BaseType.TypeChar -> ctx.branchBuiltin(instrs, readChar)
+        else -> throw IllegalStateException()
+    }
+    instrs.add(Load(ctx.dst, StackPointer.op))
+}
+
+private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+    instrs.add(Move(R0, ctx.dst.op))
+    ctx.branchBuiltin(instrs, freePair)
+}
+
+private fun Stat.Return.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+    instrs.add(Move(R0, ctx.dst.op))
+    instrs.add(Pop(ProgramCounter))
+}
+
+private fun Stat.Exit.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+    instrs.add(Move(R0, ctx.dst.op))
+    instrs.add(BranchLink(Operand.Label("exit")))
+}
+
+private fun Stat.Print.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+    instrs.add(Move(R0, ctx.dst.op))
+
+    when(val type = this.type) {
+        is Type.BaseType.TypeInt -> ctx.branchBuiltin(instrs, printInt)
+        is Type.BaseType.TypeBool -> ctx.branchBuiltin(instrs, printBool)
+        is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))
+        is Type.BaseType.TypeString -> ctx.branchBuiltin(instrs, printString)
+        is Type.ArrayType -> when (type.type) {
+            is Type.BaseType.TypeChar -> ctx.branchBuiltin(instrs, printString)
+            else -> ctx.branchBuiltin(instrs, printReference)
+        }
+        is Type.PairType -> ctx.branchBuiltin(instrs, printReference)
+        else -> throw IllegalStateException()
+    }
+}
+
+private fun Stat.Println.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    Stat.Print(pos, expr).also { it.type = type }.genCode(ctx, instrs) // Reuse code gen for print
+    ctx.branchBuiltin(instrs, println)
+}
+
+private fun Stat.IfThenElse.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    val label1 = ctx.global.getLabel()
+    val label2 = ctx.global.getLabel()
+
+    expr.genCode(ctx, instrs) // condition
+    instrs.add(Compare(ctx.dst, Imm(0)))
+    instrs.add(Branch(Operand.Label(label1), Equal))
+    branch2.genCodeWithNewScope(ctx, instrs) // code if false
+    instrs.add(Branch(Operand.Label(label2)))
+    instrs.add(Special.Label(label1))
+    branch1.genCodeWithNewScope(ctx, instrs) // code if true
+    instrs.add(Special.Label(label2))
+}
+
+private fun Stat.WhileDo.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    val label1 = ctx.global.getLabel()
+    val label2 = ctx.global.getLabel()
+
+    instrs.add(Branch(Operand.Label(label1)))
+    instrs.add(Special.Label(label2))
+    stat.genCodeWithNewScope(ctx, instrs) // loop body
+    instrs.add(Special.Label(label1))
+    expr.genCode(ctx, instrs) // loop condition
+    instrs.add(Compare(ctx.dst, Imm(1)))
+    instrs.add(Branch(Operand.Label(label1), Equal))
+}
+
+private fun Stat.Begin.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    stat.genCodeWithNewScope(ctx, instrs)
+}
+
+private fun Stat.Compose.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    stat1.genCode(ctx, instrs)
+    stat2.genCode(ctx, instrs)
+}
+
+private fun Stat.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    throw NotImplementedError("`Stat` code gen should be handled by overloaded extension funcs!")
+}
+
+// </editor-fold>
+
+
+// <editor-fold desc="`AssignRhs` code gen">
+
+private fun AssignRhs.Expression.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+}
+
+private fun AssignRhs.ArrayLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    val (arrayAddr, innerCtx) = ctx.takeReg()!!
+
+    ctx.malloc((exprs.size + 1) * 4, instrs)
+    for ((i, expr) in exprs.withIndex()) {
+        expr.genCode(innerCtx, instrs)
+        instrs.add(Store(innerCtx.dst, arrayAddr, Imm((i + 1) * 4)))
+    }
+    instrs.add(Load(innerCtx.dst, Imm(exprs.size)))
+    instrs.add(Store(innerCtx.dst, arrayAddr))
+}
+
+private fun AssignRhs.Newpair.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    ctx.malloc(8, instrs)
+    val (pairReg, ctx2) = ctx.takeReg()!!
+    for ((expr, offset) in listOf(expr1 to null, expr2 to Imm(4))) {
+        expr.genCode(ctx2, instrs)
+        instrs.add(Load(R0, Imm(4)))
+        instrs.add(BranchLink(Operand.Label("malloc")))
+        instrs.add(Store(ctx2.dst, R0))
+        instrs.add(Store(R0, pairReg, offset))
+    }
+}
+
+private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    val offset = if (accessor == PairAccessor.FST) null else Imm(4)
+
+    expr.genCode(ctx, instrs)
+    instrs.add(Move(R0, ctx.dst.op))
+    ctx.branchBuiltin(instrs, checkNullPointer)
+    instrs.add(Load(ctx.dst, ctx.dst.op, offset))
+}
+
+private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    val func = ctx.global.program.funcs.first { it.name == name }
+    var totalOffset = 0
+    if (func.params.isNotEmpty()) {
+        for ((type, expr) in func.params.map(Param::type).zip(args).reversed()) {
+            expr.genCode(ctx.withStackOffset(totalOffset), instrs)
+            instrs.add(Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true))
+            totalOffset += type.size
+            instrs.add(BranchLink(Operand.Label(func.label)))
+            instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(totalOffset)))
+        }
+    } else {
+        instrs.add(BranchLink(Operand.Label(func.label)))
+    }
+}
+
+private fun AssignRhs.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    throw NotImplementedError("`AssignRhs` code gen should be handled by overloaded extension funcs!")
+}
+
+// </editor-fold>
+
 
 private fun Expr.genCode(ctx: CodeGenContext): List<Instruction> {
     return when (this) {
