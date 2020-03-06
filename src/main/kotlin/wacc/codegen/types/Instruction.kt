@@ -74,7 +74,7 @@ sealed class Instruction {
     ) : Instruction() {
         override fun toString(): String {
             return "\tSTR$condition$access $rd, [$rn" + when (offset) {
-                is Operand.Imm -> if (offset.value == 0) "" else ", #${offset.value}"
+                is Operand.Imm -> if (offset.value == 0) "" else ", #${if (plus) offset.value else -offset.value}"
                 is Operand.Reg -> ", " + if (plus) "" else "-" + "${offset.reg}"
                 is Operand.Label -> throw IllegalStateException()
                 null -> ""
