@@ -74,7 +74,7 @@ private fun Stat.Print.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
     when (val type = this.type) {
         is Type.BaseType.TypeInt -> ctx.branchBuiltin(printInt, instrs)
         is Type.BaseType.TypeBool -> ctx.branchBuiltin(printBool, instrs)
-        is Type.BaseType.TypeChar -> BranchLink(Operand.Label("putchar"))
+        is Type.BaseType.TypeChar -> instrs.add(BranchLink(Operand.Label("putchar")))
         is Type.BaseType.TypeString -> ctx.branchBuiltin(printString, instrs)
         is Type.ArrayType -> when (type.type) {
             is Type.BaseType.TypeChar -> ctx.branchBuiltin(printString, instrs)
