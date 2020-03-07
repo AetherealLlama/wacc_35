@@ -6,6 +6,7 @@ import wacc.ast.Type
 import wacc.codegen.types.Condition.Equal
 import wacc.codegen.types.Instruction
 import wacc.codegen.types.Instruction.*
+import wacc.codegen.types.MemoryAccess
 import wacc.codegen.types.Operand
 import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operation.AddOp
@@ -15,13 +16,19 @@ import wacc.codegen.types.Register.StackPointer
 
 private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
-    instrs.add(Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name))))
+    instrs.add(when (ctx.typeOfIdent(name)) {
+        is Type.BaseType.TypeChar -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)), access = MemoryAccess.Byte)
+        else -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)))
+    })
 }
 
 private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
     when (lhs) {
-        is AssignLhs.Variable -> instrs.add(Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name))))
+        is AssignLhs.Variable -> instrs.add(when (ctx.typeOfIdent(lhs.name)) {
+            is Type.BaseType.TypeChar -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)), access = MemoryAccess.Byte)
+            else -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)))
+        })
         is AssignLhs.ArrayElem -> TODO()
         is AssignLhs.PairElem -> TODO()
     }
