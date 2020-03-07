@@ -42,7 +42,10 @@ private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instructi
         is Type.BaseType.TypeChar -> ctx.branchBuiltin(readChar, instrs)
         else -> throw IllegalStateException()
     }
-    instrs.add(Load(ctx.dst, StackPointer.op))
+    instrs.add(when (type) {
+        is Type.BaseType.TypeChar -> Load(ctx.dst, StackPointer.op, access = MemoryAccess.SignedByte)
+        else -> Load(ctx.dst, StackPointer.op)
+    })
 }
 
 private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {

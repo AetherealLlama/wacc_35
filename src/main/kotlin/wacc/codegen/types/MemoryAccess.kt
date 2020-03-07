@@ -1,13 +1,10 @@
 package wacc.codegen.types
 
-enum class MemoryAccess {
-    Byte {
-        override fun toString(): String = "B"
-    },
-    HalfWord {
-        override fun toString(): String = "H"
-    },
-    Word {
-        override fun toString(): String = ""
-    }
+enum class MemoryAccess(private val display: String) {
+    Byte("B"),
+    SignedByte("SB"),
+    HalfWord("H"),
+    Word("");
+
+    override fun toString(): String = display
 }
