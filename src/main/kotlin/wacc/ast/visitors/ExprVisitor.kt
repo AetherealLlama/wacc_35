@@ -19,12 +19,22 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
 
     override fun visitLiteral(ctx: WaccParser.LiteralContext?): Expr {
         if (ctx != null) {
-            when (ctx.lit.type) {
-                WaccLexer.BOOLLITER ->
-                    return Expr.Literal.BoolLiteral(ctx.pos, ctx.lit.text == "true")
-                WaccLexer.CHARLITER -> return Expr.Literal.CharLiteral(ctx.pos, ctx.lit.text[1]) // text[1] as ANTLR surrounds chars with "
-                WaccLexer.STRLITER -> return Expr.Literal.StringLiteral(ctx.pos, ctx.lit.text.removeSurrounding("\""))
-                WaccLexer.PAIRLITER -> return Expr.Literal.PairLiteral(ctx.pos)
+            return when (ctx.lit.type) {
+                WaccLexer.BOOLLITER -> Expr.Literal.BoolLiteral(ctx.pos, ctx.lit.text == "true")
+                WaccLexer.CHARLITER -> Expr.Literal.CharLiteral(ctx.pos, when (ctx.lit.text.removeSurrounding("\'")) {
+                    "\\0" -> '\u0000'
+                    "\\b" -> '\b'
+                    "\\t" -> '\t'
+                    "\\n" -> '\n'
+                    "\\f" -> '\u000C'
+                    "\\r" -> '\r'
+                    "\"" -> '\"'
+                    "\\" -> '\\'
+                    else -> ctx.lit.text.removeSurrounding("\'")[0]
+                })
+                WaccLexer.STRLITER -> Expr.Literal.StringLiteral(ctx.pos, ctx.lit.text.removeSurrounding("\""))
+                WaccLexer.PAIRLITER -> Expr.Literal.PairLiteral(ctx.pos)
+                else -> throw IllegalStateException()
             }
         }
         throw IllegalStateException()
