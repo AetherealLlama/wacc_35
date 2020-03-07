@@ -5,7 +5,7 @@ sealed class Operand {
         private val display: String = when (type) {
             ImmType.INT,
             ImmType.BOOL -> value.toString()
-            ImmType.CHAR -> value.toChar().toString()
+            ImmType.CHAR -> "'${value.toChar()}'"
         }
 
         override fun toString(): String = "#$display"

@@ -88,7 +88,7 @@ sealed class Instruction {
         val condition: Condition = Condition.Always
     ) : Instruction() {
         override fun toString(): String = "\tMOV$condition $reg, " + when (operand) {
-            is Operand.Imm -> "#${operand.value}"
+            is Operand.Imm -> operand.toString()
             is Operand.Reg -> "${operand.reg}"
             is Operand.Label -> throw IllegalStateException()
         }
