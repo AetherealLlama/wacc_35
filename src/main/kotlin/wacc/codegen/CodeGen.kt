@@ -213,7 +213,7 @@ internal val Type.size: Int
 
 internal val Type.memAccess: MemoryAccess
     get() = when (this) {
-        is Type.BaseType.TypeChar -> MemoryAccess.SignedByte
+        is Type.BaseType.TypeChar -> MemoryAccess.Byte
         else -> MemoryAccess.Word
     }
 
