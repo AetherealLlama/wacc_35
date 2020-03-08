@@ -74,8 +74,20 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
             instrs.add(Compare(ctx.nxt, ctx.dst.op, BarrelShift(31, BarrelShift.Type.ASR)))
             ctx.branchBuiltin(throwOverflowError, instrs, cond = NotEqual)
         }
-        DIV -> instrs.add(Op(DivOp(), ctx.dst, ctx.dst, ctx.nxt.op))
-        MOD -> instrs.add(Op(ModOp(), ctx.dst, ctx.dst, ctx.nxt.op))
+        DIV -> {
+            instrs.add(Move(R0, ctx.dst.op))
+            instrs.add(Move(R1, ctx.nxt.op))
+            ctx.branchBuiltin(checkDivideByZero, instrs)
+            instrs.add(BranchLink(Operand.Label("__aeabi_idiv")))
+            instrs.add(Move(ctx.dst, R0.op))
+        }
+        MOD -> {
+            instrs.add(Move(R0, ctx.dst.op))
+            instrs.add(Move(R1, ctx.nxt.op))
+            ctx.branchBuiltin(checkDivideByZero, instrs)
+            instrs.add(BranchLink(Operand.Label("__aeabi_idivmod")))
+            instrs.add(Move(ctx.dst, R0.op))
+        }
         ADD -> {
             instrs.add(Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, setCondCodes = true))
             ctx.branchBuiltin(throwOverflowError, instrs, cond = Overflow)
