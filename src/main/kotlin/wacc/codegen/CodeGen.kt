@@ -60,18 +60,8 @@ internal class CodeGenContext(
         return offset
     }
 
-    fun typeOfIdent(ident: String): Type {
-        var offset = stackOffset
-        var found = false
-        for (scope in scopes) {
-            for (varData in scope) {
-                val (name, type) = varData
-                if (name == ident)
-                    return type
-            }
-        }
-        throw IllegalStateException()
-    }
+    fun typeOfIdent(ident: String): Type =
+            scopes.flatten().firstOrNull { it.first == ident}?.second ?: throw IllegalStateException()
 
     fun takeReg(): Pair<Register, CodeGenContext>? =
             takeRegs(1)?.let { it.first[0] to it.second }
