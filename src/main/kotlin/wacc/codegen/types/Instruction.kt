@@ -24,7 +24,7 @@ sealed class Instruction {
                     is Operand.Reg -> operand.reg
                     is Operand.Label -> throw IllegalStateException()
                 }
-            }
+            } + (shift?.let { ", $it" } ?: "")
         }
     }
 
@@ -63,7 +63,7 @@ sealed class Instruction {
         val rm: Register,
         val rs: Register
     ) : Instruction() {
-        override fun toString(): String = "SMULL $rdLo, $rdHi, $rm, $rs"
+        override fun toString(): String = "\tSMULL $rdLo, $rdHi, $rm, $rs"
     }
 
     data class Store(
@@ -107,7 +107,7 @@ sealed class Instruction {
             is Operand.Imm -> "#${operand.value}"
             is Operand.Reg -> "${operand.reg}"
             is Operand.Label -> throw IllegalStateException()
-        }
+        } + (shift?.let { ", $it" } ?: "")
     }
 
     data class Push(
@@ -176,4 +176,6 @@ data class BarrelShift(val amount: Int, val type: Type) {
         LSL,
         ASR
     }
+
+    override fun toString(): String = "$type $amount"
 }
