@@ -97,10 +97,10 @@ private fun Stat.IfThenElse.genCode(ctx: CodeGenContext, instrs: MutableList<Ins
     expr.genCode(ctx, instrs) // condition
     instrs.add(Compare(ctx.dst, Imm(0)))
     instrs.add(Branch(Operand.Label(label1), Equal))
-    branch2.genCodeWithNewScope(ctx, instrs) // code if false
+    branch1.genCodeWithNewScope(ctx, instrs) // code if false
     instrs.add(Branch(Operand.Label(label2)))
     instrs.add(Special.Label(label1))
-    branch1.genCodeWithNewScope(ctx, instrs) // code if true
+    branch2.genCodeWithNewScope(ctx, instrs) // code if true
     instrs.add(Special.Label(label2))
 }
 
