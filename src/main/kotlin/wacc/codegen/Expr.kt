@@ -72,7 +72,7 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
         MUL -> {
             instrs.add(LongMul(ctx.dst, ctx.nxt, ctx.dst, ctx.nxt))
             instrs.add(Compare(ctx.nxt, ctx.dst.op, BarrelShift(31, BarrelShift.Type.ASR)))
-            ctx.branchBuiltin(throwOverflowError, instrs, cond = Always)
+            ctx.branchBuiltin(throwOverflowError, instrs, cond = NotEqual)
         }
         DIV -> instrs.add(Op(DivOp(), ctx.dst, ctx.dst, ctx.nxt.op))
         MOD -> instrs.add(Op(ModOp(), ctx.dst, ctx.dst, ctx.nxt.op))
