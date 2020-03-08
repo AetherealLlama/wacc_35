@@ -4,7 +4,8 @@ sealed class Operand {
     data class Imm(val value: Int, val type: ImmType = ImmType.INT) : Operand() {
         private val display: String = when (type) {
             ImmType.INT,
-            ImmType.BOOL, ImmType.CHAR -> value.toString()
+            ImmType.BOOL -> value.toString()
+            ImmType.CHAR -> "'${value.toChar()}'"
         }
 
         override fun toString(): String = "#$display"
