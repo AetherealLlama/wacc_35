@@ -28,7 +28,8 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
                     "\\n" -> '\n'
                     "\\f" -> '\u000C'
                     "\\r" -> '\r'
-                    "\"" -> '\"'
+                    "\\\"" -> '\"'
+                    "\\\'" -> '\''
                     "\\" -> '\\'
                     else -> ctx.lit.text.removeSurrounding("\'")[0]
                 })
