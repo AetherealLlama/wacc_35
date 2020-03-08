@@ -136,8 +136,10 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     funcs.add(topLevelStat)
 
     // Collect strings from user code and used builtin functions
-    val strings: List<InitializedDatum> = global.strings.map { InitializedString(global.getStringLabel(it), it) } +
+    val strings: List<InitializedDatum> = (
+            global.strings.map { InitializedString(global.getStringLabel(it), it) } +
             global.usedBuiltins.flatMap { it.stringDeps }.map { InitializedString(it.first, it.second) }
+            ).toSet().toList()
 
     // Collect all dependencies on built-in functions
     funcs.addAll(global.usedBuiltins.flatMap { it.functionDeps }.toSet().map { it.function })
