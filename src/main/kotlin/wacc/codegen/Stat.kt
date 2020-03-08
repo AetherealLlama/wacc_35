@@ -121,7 +121,7 @@ private fun Stat.WhileDo.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
     instrs.add(Special.Label(label1))
     expr.genCode(ctx, instrs) // loop condition
     instrs.add(Compare(ctx.dst, Imm(1)))
-    instrs.add(Branch(Operand.Label(label1), Equal))
+    instrs.add(Branch(Operand.Label(label2), Equal))
 }
 
 private fun Stat.Begin.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
