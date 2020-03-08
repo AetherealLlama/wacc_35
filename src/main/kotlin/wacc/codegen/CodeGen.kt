@@ -61,7 +61,7 @@ internal class CodeGenContext(
     }
 
     fun typeOfIdent(ident: String): Type =
-            scopes.flatten().firstOrNull { it.first == ident}?.second ?: throw IllegalStateException()
+            scopes.flatten().firstOrNull { it.first == ident }?.second ?: throw IllegalStateException()
 
     fun takeReg(): Pair<Register, CodeGenContext>? =
             takeRegs(1)?.let { it.first[0] to it.second }
@@ -216,9 +216,9 @@ internal val Register.op: Operand
     get() = Reg(this)
 
 internal fun CodeGenContext.computeAddressOfArrayElem(
-        name: String,
-        exprs: Array<Expr>,
-        instrs: MutableList<Instruction>
+    name: String,
+    exprs: Array<Expr>,
+    instrs: MutableList<Instruction>
 ) {
     instrs.opWithConst(AddOp, offsetOfIdent(name), dst, StackPointer)
     val isChar = typeOfIdent(name) is Type.BaseType.TypeChar
