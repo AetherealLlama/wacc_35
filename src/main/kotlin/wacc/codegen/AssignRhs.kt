@@ -3,8 +3,10 @@ package wacc.codegen
 import wacc.ast.AssignRhs
 import wacc.ast.PairAccessor
 import wacc.ast.Param
+import wacc.ast.Type.BaseType.TypeChar
 import wacc.codegen.types.Instruction
 import wacc.codegen.types.Instruction.*
+import wacc.codegen.types.MemoryAccess
 import wacc.codegen.types.Operand
 import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operation.AddOp
@@ -21,7 +23,8 @@ private fun AssignRhs.ArrayLiteral.genCode(ctx: CodeGenContext, instrs: MutableL
     ctx.malloc((exprs.size * type.size) + 4, instrs)
     for ((i, expr) in exprs.withIndex()) {
         expr.genCode(innerCtx, instrs)
-        instrs.add(Store(innerCtx.dst, arrayAddr, Imm((i + 1) * 4)))
+        val access = if (type == TypeChar) MemoryAccess.Byte else MemoryAccess.Word
+        instrs.add(Store(innerCtx.dst, arrayAddr, Imm(4 + i * type.size), access = access))
     }
     instrs.add(Load(innerCtx.dst, Imm(exprs.size)))
     instrs.add(Store(innerCtx.dst, arrayAddr))
