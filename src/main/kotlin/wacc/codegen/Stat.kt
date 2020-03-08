@@ -31,7 +31,7 @@ private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruc
         ))
         is AssignLhs.ArrayElem -> {
             ctx.takeReg()!!.second.computeAddressOfArrayElem(lhs.name, lhs.exprs, instrs) // nxt = address of elem
-            instrs.add(Store(ctx.dst, ctx.nxt, access = ctx.typeOfIdent(lhs.name).memAccess))
+            instrs.add(Store(ctx.dst, ctx.nxt, access = (ctx.typeOfIdent(lhs.name) as Type.ArrayType).type.memAccess))
         }
         is AssignLhs.PairElem -> {
             val offset = if (lhs.accessor == PairAccessor.FST) null else Imm(4)

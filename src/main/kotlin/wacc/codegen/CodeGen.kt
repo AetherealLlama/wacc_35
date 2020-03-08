@@ -238,7 +238,7 @@ internal fun CodeGenContext.computeAddressOfArrayElem(
     instrs: MutableList<Instruction>
 ) {
     instrs.opWithConst(AddOp, offsetOfIdent(name), dst, StackPointer)
-    val isChar = typeOfIdent(name) is Type.BaseType.TypeChar
+    val isChar = typeOfIdent(name).let { type -> type is Type.ArrayType && type.type is Type.BaseType.TypeChar }
     for (expr in exprs) {
         takeReg()?.let { (_, ctx2) ->
             expr.genCode(ctx2, instrs) // Register implementation
