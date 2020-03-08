@@ -62,7 +62,7 @@ sealed class Instruction {
         val rm: Register,
         val rs: Register
     ) : Instruction() {
-        override fun toString(): String = "SMULL $rdLo $rdHi $rm $rs"
+        override fun toString(): String = "SMULL $rdLo, $rdHi, $rm, $rs"
     }
 
     data class Store(
