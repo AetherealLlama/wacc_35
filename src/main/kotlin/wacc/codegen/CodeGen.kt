@@ -1,9 +1,6 @@
 package wacc.codegen
 
-import wacc.ast.Func
-import wacc.ast.Program
-import wacc.ast.Stat
-import wacc.ast.Type
+import wacc.ast.*
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.Always
 import wacc.codegen.types.InitializedDatum.InitializedString
@@ -207,6 +204,12 @@ internal val Type.size: Int
         else -> 4
     }
 
+internal val Type.memAccess: MemoryAccess
+    get() = when (this) {
+        is Type.BaseType.TypeChar -> MemoryAccess.Byte
+        else -> MemoryAccess.Word
+    }
+
 internal val Func.label: String
     get() = "f_$name"
 
@@ -221,5 +224,36 @@ internal fun CodeGenContext.branchBuiltin(
 
 internal val Register.op: Operand
     get() = Reg(this)
+
+internal fun CodeGenContext.computeAddressOfArrayElem(
+        name: String,
+        exprs: Array<Expr>,
+        instrs: MutableList<Instruction>
+) {
+    instrs.opWithConst(AddOp, offsetOfIdent(name), dst, StackPointer)
+    val isChar = typeOfIdent(name) is Type.BaseType.TypeChar
+    for (expr in exprs) {
+        takeReg()?.let { (_, ctx2) ->
+            expr.genCode(ctx2, instrs) // Register implementation
+        } ?: let { // Stack implementation
+            instrs.add(Push(listOf(dst))) // save array pointer
+            expr.genCode(this, instrs)
+            instrs.add(Move(nxt, dst.op)) // nxt = array index
+            instrs.add(Pop(listOf(dst))) // dst = array pointer
+        } // nxt = array index
+        instrs.add(Load(dst, dst.op)) // get address of array
+        instrs.add(Move(R0, nxt.op))
+        instrs.add(Move(R1, dst.op))
+        branchBuiltin(checkArrayBounds, instrs) // check array bounds
+        instrs.add(Op(AddOp, dst, dst, Imm(4))) // compute address of desired array elem
+        instrs.add(Op(AddOp, dst, dst, nxt.op, if (isChar) null else BarrelShift(2, BarrelShift.Type.LSL)))
+    }
+}
+
+internal fun CodeGenContext.computeAddressOfPairElem(expr: Expr, instrs: MutableList<Instruction>) {
+    expr.genCode(this, instrs)
+    instrs.add(Move(R0, dst.op))
+    branchBuiltin(checkNullPointer, instrs)
+}
 
 // </editor-fold>

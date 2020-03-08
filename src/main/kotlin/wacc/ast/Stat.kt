@@ -51,7 +51,9 @@ sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
         }
     }
 
-    class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignLhs(pos)
+    class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignLhs(pos) {
+        lateinit var type: Type
+    }
 }
 
 /**

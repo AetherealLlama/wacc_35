@@ -118,8 +118,9 @@ private fun AssignLhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         val errors: Errors =
                 if (expr is Expr.Literal.PairLiteral) listOf(PairDereferenceNull(pos))
                 else emptyList()
-        val pairCheck = expr.checkPairElem(ctx)(accessor)
-        pairCheck.first to errors + pairCheck.second
+        val (pairType, pairErrors) = expr.checkPairElem(ctx)(accessor)
+        this.type = pairType
+        pairType to errors + pairErrors
     }
 }
 

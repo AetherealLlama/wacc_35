@@ -44,10 +44,7 @@ private fun AssignRhs.Newpair.genCode(ctx: CodeGenContext, instrs: MutableList<I
 
 private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     val offset = if (accessor == PairAccessor.FST) null else Imm(4)
-
-    expr.genCode(ctx, instrs)
-    instrs.add(Move(R0, ctx.dst.op))
-    ctx.branchBuiltin(checkNullPointer, instrs)
+    ctx.computeAddressOfPairElem(expr, instrs)
     instrs.add(Load(ctx.dst, ctx.dst.op, offset))
 }
 

@@ -1,16 +1,14 @@
 package wacc.codegen
 
 import wacc.ast.AssignLhs
+import wacc.ast.PairAccessor
 import wacc.ast.Stat
 import wacc.ast.Type
+import wacc.codegen.types.*
 import wacc.codegen.types.Condition.Equal
-import wacc.codegen.types.Instruction
 import wacc.codegen.types.Instruction.*
-import wacc.codegen.types.MemoryAccess
-import wacc.codegen.types.Operand
 import wacc.codegen.types.Operand.Imm
 import wacc.codegen.types.Operation.AddOp
-import wacc.codegen.types.R0
 import wacc.codegen.types.Register.ProgramCounter
 import wacc.codegen.types.Register.StackPointer
 
@@ -25,12 +23,21 @@ private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Inst
 private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
     when (lhs) {
-        is AssignLhs.Variable -> instrs.add(when (ctx.typeOfIdent(lhs.name)) {
-            is Type.BaseType.TypeChar -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)), access = MemoryAccess.Byte)
-            else -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name)))
-        })
-        is AssignLhs.ArrayElem -> TODO()
-        is AssignLhs.PairElem -> TODO()
+        is AssignLhs.Variable -> instrs.add(Store(
+                ctx.dst,
+                StackPointer,
+                Imm(ctx.offsetOfIdent(lhs.name)),
+                access = ctx.typeOfIdent(lhs.name).memAccess
+        ))
+        is AssignLhs.ArrayElem -> {
+            ctx.takeReg()!!.second.computeAddressOfArrayElem(lhs.name, lhs.exprs, instrs) // nxt = address of elem
+            Store(ctx.dst, ctx.nxt, access = ctx.typeOfIdent(lhs.name).memAccess)
+        }
+        is AssignLhs.PairElem -> {
+            val offset = if (lhs.accessor == PairAccessor.FST) null else Imm(4)
+            ctx.takeReg()!!.second.computeAddressOfPairElem(lhs.expr, instrs)
+            Store(ctx.dst, ctx.nxt, offset = offset, access = lhs.type.memAccess)
+        }
     }
 }
 
