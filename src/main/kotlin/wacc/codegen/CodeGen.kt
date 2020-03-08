@@ -38,8 +38,9 @@ internal class GlobalCodeGenData(
 
 internal class CodeGenContext(
     val global: GlobalCodeGenData,
-    private val stackOffset: Int,
-    private val scopes: List<List<Pair<String, Type>>>,
+    val func: Func?,
+    private val scopes: List<List<Pair<String, Type>>> = emptyList(),
+    private val stackOffset: Int = 0,
     private val availableRegs: List<Register> = usableRegs
 ) {
     fun offsetOfIdent(ident: String): Int {
@@ -52,34 +53,49 @@ internal class CodeGenContext(
                     offset += memAcc.size
                 found = found || (name == ident)
             }
-            if (found)
+            if (found) {
                 break
+            }
+            offset += scope.sumBy { it.second.size }
         }
-        if (!found)
-            throw IllegalStateException()
-        return offset
+        if (found)
+            return offset
+
+        // search in func params
+        if (func != null) {
+            offset = stackOffset + totalScopeOffset + 4
+            for (param in func.params) {
+                if (param.name == ident)
+                    return offset
+                offset += param.type.size
+            }
+        }
+
+        throw IllegalStateException()
     }
 
     fun typeOfIdent(ident: String): Type =
-            scopes.flatten().firstOrNull { it.first == ident }?.second ?: throw IllegalStateException()
+            scopes.flatten().firstOrNull { it.first == ident }?.second
+                    ?: func?.params?.firstOrNull { it.name == ident }?.type
+                    ?: throw IllegalStateException()
 
     fun takeReg(): Pair<Register, CodeGenContext>? =
             takeRegs(1)?.let { it.first[0] to it.second }
 
     fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext =
-            CodeGenContext(global, stackOffset, listOf(newScope) + scopes, availableRegs)
+            CodeGenContext(global, func, listOf(newScope) + scopes, stackOffset, availableRegs)
 
     fun takeRegs(n: Int): Pair<List<Register>, CodeGenContext>? =
             if (availableRegs.size < n + 2)
                 null
             else
-                availableRegs.take(n) to CodeGenContext(global, stackOffset, scopes, availableRegs.drop(n))
+                availableRegs.take(n) to CodeGenContext(global, func, scopes, stackOffset, availableRegs.drop(n))
 
     fun withRegs(vararg regs: Register) =
-            CodeGenContext(global, stackOffset, scopes, regs.asList() + availableRegs)
+            CodeGenContext(global, func, scopes, stackOffset, regs.asList() + availableRegs)
 
     fun withStackOffset(offset: Int) =
-            CodeGenContext(global, offset, scopes, availableRegs)
+            CodeGenContext(global, func, scopes, offset, availableRegs)
 
     val dst: Register
         get() = availableRegs[0]
@@ -88,7 +104,7 @@ internal class CodeGenContext(
         get() = availableRegs[1]
 
     internal val totalScopeOffset: Int
-        get() = scopes.sumBy { it.sumBy { it.second.size } }
+        get() = scopes.sumBy { scope -> scope.sumBy { it.second.size } }
 }
 
 // </editor-fold>
@@ -110,7 +126,7 @@ fun Program.getAsm(): String {
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
     val funcs = funcs.map { it.genCode(global) }.toMutableList()
-    val statCtx = CodeGenContext(global, 0, emptyList())
+    val statCtx = CodeGenContext(global, func = null)
 
     // Assemble the top-level statement
     val topLevelStat = emptyList<Instruction>() +
@@ -135,14 +151,14 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
 }
 
 private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
-    val ctx = CodeGenContext(global, 0, emptyList())
+    val ctx = CodeGenContext(global, func = this)
     val instrs = mutableListOf<Instruction>()
 
     instrs.add(Special.Label(label))
     instrs.add(Push(LinkRegister))
 
     // Skip shifting SP after the function so it can be handled in `return`
-    stat.genCodeWithNewScope(ctx, instrs, params.map { it.name to it.type }, skipPost = true)
+    stat.genCodeWithNewScope(ctx, instrs, skipPost = true)
 
     instrs.add(Pop(ProgramCounter))
     instrs.add(Special.Ltorg)

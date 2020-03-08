@@ -81,7 +81,7 @@ sealed class Instruction {
                 is Operand.Reg -> ", " + if (plus) "" else "-" + "${offset.reg}"
                 is Operand.Label -> throw IllegalStateException()
                 null -> ""
-            } + "]"
+            } + "]" + (if (moveReg) "!" else "")
         }
     }
 
