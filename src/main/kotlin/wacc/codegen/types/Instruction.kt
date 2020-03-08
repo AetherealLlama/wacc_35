@@ -177,5 +177,5 @@ data class BarrelShift(val amount: Int, val type: Type) {
         ASR
     }
 
-    override fun toString(): String = "$type $amount"
+    override fun toString(): String = "$type #$amount"
 }
