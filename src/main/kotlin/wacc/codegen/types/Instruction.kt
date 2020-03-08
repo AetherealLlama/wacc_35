@@ -18,6 +18,7 @@ sealed class Instruction {
             return "\t" + when (operation) {
                 is Operation.DivOp -> TODO()
                 is Operation.ModOp -> TODO()
+                is Operation.NegateOp -> "EOR$condition $rd, $rn, #1"
                 else -> "$operation${if (setCondCodes) "S" else ""}$condition $rd, $rn, " + when (operand) {
                     is Operand.Imm -> "#${operand.value}"
                     is Operand.Reg -> operand.reg
