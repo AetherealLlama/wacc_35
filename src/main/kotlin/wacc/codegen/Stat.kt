@@ -42,17 +42,25 @@ private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruc
 }
 
 private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(0)))
+    when (lhs) {
+        is AssignLhs.Variable -> {
+            instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name))))
+        }
+        is AssignLhs.ArrayElem -> {
+            ctx.computeAddressOfArrayElem(lhs.name, lhs.exprs, instrs)
+        }
+        is AssignLhs.PairElem -> {
+            val offset = if (lhs.accessor == PairAccessor.FST) Imm(0) else Imm(4)
+            ctx.computeAddressOfPairElem(lhs.expr, instrs)
+            instrs.add(Op(AddOp, ctx.dst, ctx.dst, offset))
+        }
+    }
     instrs.add(Move(R0, ctx.dst.op))
     when (type) {
         is Type.BaseType.TypeInt -> ctx.branchBuiltin(readInt, instrs)
         is Type.BaseType.TypeChar -> ctx.branchBuiltin(readChar, instrs)
         else -> throw IllegalStateException()
     }
-    instrs.add(when (type) {
-        is Type.BaseType.TypeChar -> Load(ctx.dst, StackPointer.op, access = MemoryAccess.SignedByte)
-        else -> Load(ctx.dst, StackPointer.op)
-    })
 }
 
 private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
