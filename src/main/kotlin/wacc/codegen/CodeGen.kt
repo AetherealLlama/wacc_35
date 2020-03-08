@@ -63,6 +63,7 @@ internal class CodeGenContext(
 
         // search in func params
         if (func != null) {
+            // move past vars in the current scopes, leave space for return address!
             offset = stackOffset + totalScopeOffset + 4
             for (param in func.params) {
                 if (param.name == ident)
@@ -212,7 +213,7 @@ internal val Type.size: Int
 
 internal val Type.memAccess: MemoryAccess
     get() = when (this) {
-        is Type.BaseType.TypeChar -> MemoryAccess.Byte
+        is Type.BaseType.TypeChar -> MemoryAccess.SignedByte
         else -> MemoryAccess.Word
     }
 
