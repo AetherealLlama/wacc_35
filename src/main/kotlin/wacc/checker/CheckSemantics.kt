@@ -129,6 +129,7 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         val checkedExprs = exprs.map { it.checkSemantics(ctx) }
         val errors = checkedExprs.flatMap { it.second }
         val type = Type.ArrayType(checkedExprs.firstOrNull()?.first ?: Type.AnyType)
+        this.type = type
         type to errors
     }
     is AssignRhs.Newpair -> {

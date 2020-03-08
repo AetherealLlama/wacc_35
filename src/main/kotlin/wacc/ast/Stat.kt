@@ -61,6 +61,8 @@ sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
 sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
     class Expression(pos: FilePos, val expr: Expr) : AssignRhs(pos)
     class ArrayLiteral(pos: FilePos, val exprs: Array<Expr>) : AssignRhs(pos) {
+        lateinit var type: Type
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false

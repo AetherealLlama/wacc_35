@@ -18,7 +18,7 @@ private fun AssignRhs.Expression.genCode(ctx: CodeGenContext, instrs: MutableLis
 private fun AssignRhs.ArrayLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     val (arrayAddr, innerCtx) = ctx.takeReg()!!
 
-    ctx.malloc((exprs.size + 1) * 4, instrs)
+    ctx.malloc((exprs.size * type.size) + 4, instrs)
     for ((i, expr) in exprs.withIndex()) {
         expr.genCode(innerCtx, instrs)
         instrs.add(Store(innerCtx.dst, arrayAddr, Imm((i + 1) * 4)))
