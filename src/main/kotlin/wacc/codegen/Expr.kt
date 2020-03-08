@@ -32,7 +32,7 @@ private fun Expr.Literal.StringLiteral.genCode(ctx: CodeGenContext, instrs: Muta
 }
 
 private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    instrs.add(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name))))
+    instrs.add(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name)), access = ctx.typeOfIdent(name).memAccess))
 }
 
 private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
