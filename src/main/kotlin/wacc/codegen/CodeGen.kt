@@ -167,6 +167,15 @@ private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
 
 // <editor-fold desc="Helper functions and properties">
 
+internal fun MutableList<Instruction>.opWithConst(op: Operation, constant: Int, rd: Register, rn: Register = rd) {
+    var n = constant
+    while (n > 1024) {
+        add(Op(op, rd, rn, Imm(1024)))
+        n -= 1024
+    }
+    add(Op(op, rd, rn, Imm(n)))
+}
+
 private val BuiltinFunction.stringDeps: Set<BuiltinString>
     get() = (deps.second + deps.first.flatMap { it.stringDeps }).toSet()
 
@@ -186,10 +195,10 @@ internal fun Stat.genCodeWithNewScope(
     val vars = this.vars + extraVars
 
     if (vars.isNotEmpty())
-        instrs.add(Op(SubOp, StackPointer, StackPointer, Imm(vars.offset)))
+        instrs.opWithConst(SubOp, vars.offset, StackPointer)
     genCode(ctx.withNewScope(vars), instrs)
     if (!skipPost && vars.isNotEmpty())
-        instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(vars.offset)))
+        instrs.opWithConst(AddOp, vars.offset, StackPointer)
 }
 
 internal val Type.size: Int

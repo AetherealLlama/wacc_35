@@ -36,7 +36,7 @@ private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
 }
 
 private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name.name))))
+    instrs.opWithConst(AddOp, ctx.offsetOfIdent(name.name), ctx.dst, StackPointer)
     for (expr in exprs) {
         ctx.takeReg()?.let { (_, ctx2) ->
             expr.genCode(ctx2, instrs) // Register implementation

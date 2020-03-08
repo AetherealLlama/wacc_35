@@ -57,7 +57,7 @@ private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instructi
 private fun Stat.Return.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     expr.genCode(ctx, instrs)
     instrs.add(Move(R0, ctx.dst.op))
-    instrs.add(Op(AddOp, StackPointer, StackPointer, Imm(ctx.totalScopeOffset)))
+    instrs.opWithConst(AddOp, ctx.totalScopeOffset, StackPointer)
     instrs.add(Pop(ProgramCounter))
 }
 
