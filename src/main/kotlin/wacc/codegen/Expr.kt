@@ -2,6 +2,7 @@ package wacc.codegen
 
 import wacc.ast.BinaryOperator.*
 import wacc.ast.Expr
+import wacc.ast.Type
 import wacc.ast.UnaryOperator.*
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
@@ -37,6 +38,7 @@ private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
 
 private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     instrs.opWithConst(AddOp, ctx.offsetOfIdent(name.name), ctx.dst, StackPointer)
+    val isChar = ctx.typeOfIdent(name.name) is Type.BaseType.TypeChar
     for (expr in exprs) {
         ctx.takeReg()?.let { (_, ctx2) ->
             expr.genCode(ctx2, instrs) // Register implementation
@@ -51,7 +53,7 @@ private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Inst
         instrs.add(Move(R1, ctx.dst.op))
         ctx.branchBuiltin(checkArrayBounds, instrs) // check array bounds
         instrs.add(Op(AddOp, ctx.dst, ctx.dst, Imm(4))) // compute address of desired array elem
-        instrs.add(Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, BarrelShift(2, BarrelShift.Type.LSL)))
+        instrs.add(Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, if (isChar) null else BarrelShift(2, BarrelShift.Type.LSL)))
     }
     instrs.add(Load(ctx.dst, ctx.dst.op))
 }
