@@ -30,12 +30,12 @@ private fun AssignRhs.ArrayLiteral.genCode(ctx: CodeGenContext, instrs: MutableL
 private fun AssignRhs.Newpair.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     ctx.malloc(8, instrs)
     val (pairReg, ctx2) = ctx.takeReg()!!
-    for ((expr, offset) in listOf(expr1 to null, expr2 to Imm(4))) {
+    for ((expr, type, offset) in listOf(Triple(expr1, types.first, null), Triple(expr2, types.second, Imm(4)))) {
         expr.genCode(ctx2, instrs)
-        instrs.add(Load(R0, Imm(4)))
+        instrs.add(Load(R0, Imm(type.size)))
         instrs.add(BranchLink(Operand.Label("malloc")))
         instrs.add(Store(ctx2.dst, R0))
-        instrs.add(Store(R0, pairReg, offset))
+        instrs.add(Store(R0, pairReg, offset, access = type.memAccess))
     }
 }
 
@@ -43,7 +43,7 @@ private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<
     val offset = if (accessor == PairAccessor.FST) null else Imm(4)
     ctx.computeAddressOfPairElem(expr, instrs)
     instrs.add(Load(ctx.dst, ctx.dst.op, offset))
-    instrs.add(Load(ctx.dst, ctx.dst.op, offset))
+    instrs.add(Load(ctx.dst, ctx.dst.op, offset, access = type.memAccess))
 }
 
 private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {

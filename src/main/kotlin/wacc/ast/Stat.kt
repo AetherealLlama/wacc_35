@@ -75,14 +75,19 @@ sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
 
             return true
         }
-
         override fun hashCode(): Int {
             return exprs.contentHashCode()
         }
     }
 
-    class Newpair(pos: FilePos, val expr1: Expr, val expr2: Expr) : AssignRhs(pos)
-    class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignRhs(pos)
+    class Newpair(pos: FilePos, val expr1: Expr, val expr2: Expr) : AssignRhs(pos) {
+        lateinit var types: Pair<Type, Type>
+    }
+
+    class PairElem(pos: FilePos, val accessor: PairAccessor, val expr: Expr) : AssignRhs(pos) {
+        lateinit var type: Type
+    }
+
     class Call(pos: FilePos, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

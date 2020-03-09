@@ -136,6 +136,7 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
     is AssignRhs.Newpair -> {
         val (fstRawType, fstErrors) = expr1.checkSemantics(ctx)
         val (sndRawType, sndErrors) = expr2.checkSemantics(ctx)
+        types = fstRawType to sndRawType
         // Make sure elems are types that can be put in pairs
         val (fstType, fstTypeError) = fstRawType.asPairElemType?.let { it to emptyList<ProgramError>() }
                 ?: Type.AnyType to listOf(InvalidPairElemType(fstRawType, pos))
@@ -148,6 +149,7 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
                 if (expr is Expr.Literal.PairLiteral) listOf(PairDereferenceNull(pos))
                 else emptyList()
         val pairCheck = expr.checkPairElem(ctx)(accessor)
+        type = pairCheck.first
         pairCheck.first to errors + pairCheck.second
     }
     is AssignRhs.Call -> ctx.funcs.find { it.name == name }?.let { funcDef: Func ->
