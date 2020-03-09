@@ -1,6 +1,8 @@
 package wacc.codegen
 
 import wacc.ast.*
+import wacc.ast.Type.BaseType.TypeBool
+import wacc.ast.Type.BaseType.TypeChar
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.Always
 import wacc.codegen.types.InitializedDatum.InitializedString
@@ -222,22 +224,22 @@ internal fun Stat.genCodeWithNewScope(
 
 internal val Type.size: Int
     get() = when (this) {
-        is Type.BaseType.TypeChar,
-        is Type.BaseType.TypeBool -> 1
+        is TypeChar,
+        is TypeBool -> 1
         else -> 4
     }
 
 internal val Type.memAccess: MemoryAccess
     get() = when (this) {
-        is Type.BaseType.TypeChar,
-        is Type.BaseType.TypeBool -> MemoryAccess.Byte
+        is TypeChar,
+        is TypeBool -> MemoryAccess.Byte
         else -> MemoryAccess.Word
     }
 
 internal val Type.barrelShift: BarrelShift?
     get() = when (this) {
-        is Type.BaseType.TypeChar,
-        is Type.BaseType.TypeBool -> null
+        is TypeChar,
+        is TypeBool -> null
         else -> BarrelShift(2, BarrelShift.Type.LSL)
     }
 
@@ -276,7 +278,16 @@ internal fun CodeGenContext.computeAddressOfArrayElem(
         instrs.add(Move(R1, dst.op))
         branchBuiltin(checkArrayBounds, instrs) // check array bounds
         instrs.add(Op(AddOp, dst, dst, Imm(4))) // compute address of desired array elem
-        instrs.add(Op(AddOp, dst, dst, nxt.op, typeOfIdent(name).barrelShift))
+        val barrelShift = with(typeOfIdent(name)) {
+            if (this is Type.ArrayType) {
+                when (this.type) {
+                    is TypeChar, TypeBool -> null
+                    else -> this.type.barrelShift
+                }
+            } else
+                throw IllegalStateException()
+        }
+        instrs.add(Op(AddOp, dst, dst, nxt.op, barrelShift))
     }
 }
 

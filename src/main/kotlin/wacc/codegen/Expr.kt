@@ -2,6 +2,9 @@ package wacc.codegen
 
 import wacc.ast.BinaryOperator.*
 import wacc.ast.Expr
+import wacc.ast.Type
+import wacc.ast.Type.BaseType.TypeBool
+import wacc.ast.Type.BaseType.TypeChar
 import wacc.ast.UnaryOperator.*
 import wacc.codegen.types.*
 import wacc.codegen.types.Condition.*
@@ -38,7 +41,16 @@ private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
 
 private fun Expr.ArrayElem.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     ctx.computeAddressOfArrayElem(name.name, exprs, instrs)
-    instrs.add(Load(ctx.dst, ctx.dst.op))
+    val access = with(ctx.typeOfIdent(name.name)) {
+        if (this is Type.ArrayType) {
+            if (this.type is TypeChar || this.type is TypeBool)
+                MemoryAccess.SignedByte
+            else
+                MemoryAccess.Word
+        } else
+            throw IllegalStateException()
+    }
+    instrs.add(Load(ctx.dst, ctx.dst.op, access = access))
 }
 
 private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
