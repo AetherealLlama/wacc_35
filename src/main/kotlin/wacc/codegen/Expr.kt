@@ -86,7 +86,7 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
             instrs.add(Move(R1, regs.second.op))
             ctx.branchBuiltin(checkDivideByZero, instrs)
             instrs.add(BranchLink(Operand.Label("__aeabi_idivmod")))
-            instrs.add(Move(ctx.dst, R0.op))
+            instrs.add(Move(ctx.dst, R1.op))
         }
         ADD -> {
             instrs.add(Op(AddOp, ctx.dst, regs.first, regs.second.op, setCondCodes = true))
