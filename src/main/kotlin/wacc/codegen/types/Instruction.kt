@@ -37,6 +37,7 @@ sealed class Instruction {
         val condition: Condition = Condition.Always
     ) : Instruction() {
         override fun toString(): String {
+            val access = if (this.access == MemoryAccess.Byte) MemoryAccess.SignedByte else this.access
             val builder = StringBuilder("\t")
             builder.append("LDR$condition$access $rd, ")
             builder.append(when (op) {
