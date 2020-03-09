@@ -180,7 +180,7 @@ val freePair: BuiltinFunction = BuiltinFunction(listOf(
         Load(R0, Reg(R0)),
         BranchLink(Operand.Label("free")),
         Load(R0, Reg(StackPointer)),
-        Load(R0, Reg(StackPointer), Imm(4)),
+        Load(R0, R0.op, Imm(4)),
         BranchLink(Operand.Label("free")),
         Pop(listOf(R0)),
         BranchLink(Operand.Label("free")),
