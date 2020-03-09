@@ -59,6 +59,7 @@ private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Inst
     } else {
         instrs.add(BranchLink(Operand.Label(func.label)))
     }
+    instrs.add(Move(ctx.dst, R0.op))
 }
 
 // Delegates code gen to more specific functions
