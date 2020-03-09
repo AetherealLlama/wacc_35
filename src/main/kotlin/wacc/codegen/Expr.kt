@@ -99,7 +99,10 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
             instrs.add(Op(AddOp, ctx.dst, regs.first, regs.second.op, setCondCodes = true))
             ctx.branchBuiltin(throwOverflowError, instrs, cond = Overflow)
         }
-        SUB -> instrs.add(Op(SubOp, ctx.dst, regs.first, regs.second.op))
+        SUB -> {
+            instrs.add(Op(SubOp, ctx.dst, regs.first, regs.second.op, setCondCodes = true))
+            ctx.branchBuiltin(throwOverflowError, instrs, cond = Overflow)
+        }
         GT -> regs.assignBool(SignedGreaterThan, instrs)
         GTE -> regs.assignBool(SignedGreaterOrEqual, instrs)
         LT -> regs.assignBool(SignedLess, instrs)
