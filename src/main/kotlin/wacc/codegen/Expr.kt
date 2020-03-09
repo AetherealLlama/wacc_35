@@ -44,8 +44,11 @@ private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
     expr.genCode(ctx, instrs)
     when (operator) {
         BANG -> instrs.add(Op(NegateOp, ctx.dst, ctx.dst, ctx.dst.op))
-        MINUS -> Op(RevSubOp, ctx.dst, ctx.dst, Imm(0))
-        LEN -> Load(ctx.dst, ctx.dst.op)
+        MINUS -> {
+            instrs.add(Op(RevSubOp, ctx.dst, ctx.dst, Imm(0), setCondCodes = true))
+            ctx.branchBuiltin(throwOverflowError, instrs, cond = Overflow)
+        }
+        LEN -> instrs.add(Load(ctx.dst, ctx.dst.op))
         ORD, CHR -> {} // Chars and ints should be represented the same way; ignore conversion
     }
 }
