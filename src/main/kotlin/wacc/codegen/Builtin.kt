@@ -111,7 +111,7 @@ val readInt: BuiltinFunction = BuiltinFunction(listOf(
         Pop(ProgramCounter)
 ), emptyList<BuiltinFunction>() to listOf(readIntString))
 
-val readCharString: BuiltinString = "__s_read_char" to "%c"
+val readCharString: BuiltinString = "__s_read_char" to " %c"
 val readChar: BuiltinFunction = BuiltinFunction(listOf(
         Label("__f_read_char"),
         Push(LinkRegister),
