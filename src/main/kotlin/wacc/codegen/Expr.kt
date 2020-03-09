@@ -51,7 +51,7 @@ private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
 }
 
 private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    ctx.takeRegs(2)?.let { (_, ctx2) -> // Register implementation
+    val regs = ctx.takeRegs(2, force = true)?.let { (_, ctx2) -> // Register implementation
         if (expr1.weight <= expr2.weight) {
             expr1.genCode(ctx2.withRegs(ctx.dst, ctx.nxt), instrs)
             expr2.genCode(ctx2.withRegs(ctx.nxt), instrs)
@@ -59,48 +59,48 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
             expr2.genCode(ctx2.withRegs(ctx.nxt, ctx.dst), instrs)
             expr1.genCode(ctx2.withRegs(ctx.dst), instrs)
         }
+        ctx.dst to ctx.nxt
     } ?: let { // Stack implementation
         expr1.genCode(ctx, instrs)
+        instrs.add(Push(ctx.dst))
         expr2.genCode(ctx, instrs)
-        instrs.add(Move(ctx.nxt, ctx.dst.op))
-        instrs.add(Pop(listOf(ctx.dst)))
+        instrs.add(Pop(ctx.nxt))
+        ctx.nxt to ctx.dst
     }
-
-    val regs = ctx.dst to ctx.nxt
 
     instrs + when (operator) {
         MUL -> {
-            instrs.add(LongMul(ctx.dst, ctx.nxt, ctx.dst, ctx.nxt))
+            instrs.add(LongMul(ctx.dst, ctx.nxt, regs.first, regs.second))
             instrs.add(Compare(ctx.nxt, ctx.dst.op, BarrelShift(31, BarrelShift.Type.ASR)))
             ctx.branchBuiltin(throwOverflowError, instrs, cond = NotEqual)
         }
         DIV -> {
-            instrs.add(Move(R0, ctx.dst.op))
-            instrs.add(Move(R1, ctx.nxt.op))
+            instrs.add(Move(R0, regs.first.op))
+            instrs.add(Move(R1, regs.second.op))
             ctx.branchBuiltin(checkDivideByZero, instrs)
             instrs.add(BranchLink(Operand.Label("__aeabi_idiv")))
             instrs.add(Move(ctx.dst, R0.op))
         }
         MOD -> {
-            instrs.add(Move(R0, ctx.dst.op))
-            instrs.add(Move(R1, ctx.nxt.op))
+            instrs.add(Move(R0, regs.first.op))
+            instrs.add(Move(R1, regs.second.op))
             ctx.branchBuiltin(checkDivideByZero, instrs)
             instrs.add(BranchLink(Operand.Label("__aeabi_idivmod")))
             instrs.add(Move(ctx.dst, R0.op))
         }
         ADD -> {
-            instrs.add(Op(AddOp, ctx.dst, ctx.dst, ctx.nxt.op, setCondCodes = true))
+            instrs.add(Op(AddOp, ctx.dst, regs.first, regs.second.op, setCondCodes = true))
             ctx.branchBuiltin(throwOverflowError, instrs, cond = Overflow)
         }
-        SUB -> instrs.add(Op(SubOp, ctx.dst, ctx.dst, ctx.nxt.op))
+        SUB -> instrs.add(Op(SubOp, ctx.dst, regs.first, regs.second.op))
         GT -> regs.assignBool(SignedGreaterThan, instrs)
         GTE -> regs.assignBool(SignedGreaterOrEqual, instrs)
         LT -> regs.assignBool(SignedLess, instrs)
         LTE -> regs.assignBool(SignedLessOrEqual, instrs)
         EQ -> regs.assignBool(Equal, instrs)
         NEQ -> regs.assignBool(NotEqual, instrs)
-        LAND -> instrs.add(Op(AndOp, ctx.dst, ctx.dst, ctx.nxt.op))
-        LOR -> instrs.add(Op(OrOp, ctx.dst, ctx.dst, ctx.nxt.op))
+        LAND -> instrs.add(Op(AndOp, ctx.dst, regs.first, regs.second.op))
+        LOR -> instrs.add(Op(OrOp, ctx.dst, regs.first, regs.second.op))
     }
 }
 

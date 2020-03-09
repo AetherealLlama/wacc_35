@@ -86,8 +86,8 @@ internal class CodeGenContext(
     fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext =
             CodeGenContext(global, func, listOf(newScope) + scopes, stackOffset, availableRegs)
 
-    fun takeRegs(n: Int): Pair<List<Register>, CodeGenContext>? =
-            if (availableRegs.size < n + 2)
+    fun takeRegs(n: Int, force: Boolean = false): Pair<List<Register>, CodeGenContext>? =
+            if (availableRegs.size < n + (if (force) 1 else 2))
                 null
             else
                 availableRegs.take(n) to CodeGenContext(global, func, scopes, stackOffset, availableRegs.drop(n))
