@@ -34,8 +34,8 @@ private fun AssignRhs.Newpair.genCode(ctx: CodeGenContext, instrs: MutableList<I
         expr.genCode(ctx2, instrs)
         instrs.add(Load(R0, Imm(type.size)))
         instrs.add(BranchLink(Operand.Label("malloc")))
-        instrs.add(Store(ctx2.dst, R0))
-        instrs.add(Store(R0, pairReg, offset, access = type.memAccess))
+        instrs.add(Store(ctx2.dst, R0, access = type.memAccess))
+        instrs.add(Store(R0, pairReg, offset))
     }
 }
 
