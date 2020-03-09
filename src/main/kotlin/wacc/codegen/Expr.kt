@@ -31,6 +31,10 @@ private fun Expr.Literal.StringLiteral.genCode(ctx: CodeGenContext, instrs: Muta
     instrs.add(Load(ctx.dst, Operand.Label(ctx.global.getStringLabel(value))))
 }
 
+private fun Expr.Literal.PairLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    instrs.add(Move(ctx.dst, Imm(0)))
+}
+
 private fun Expr.Ident.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     instrs.add(Load(ctx.dst, StackPointer.op, Imm(ctx.offsetOfIdent(name)), access = ctx.typeOfIdent(name).memAccess))
 }
@@ -113,7 +117,7 @@ internal fun Expr.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>)
     is Expr.Literal.BoolLiteral -> genCode(ctx, instrs)
     is Expr.Literal.CharLiteral -> genCode(ctx, instrs)
     is Expr.Literal.StringLiteral -> genCode(ctx, instrs)
-    is Expr.Literal.PairLiteral -> throw IllegalStateException()
+    is Expr.Literal.PairLiteral -> genCode(ctx, instrs)
     is Expr.Ident -> genCode(ctx, instrs)
     is Expr.ArrayElem -> genCode(ctx, instrs)
     is Expr.UnaryOp -> genCode(ctx, instrs)
