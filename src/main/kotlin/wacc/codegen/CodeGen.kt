@@ -222,14 +222,23 @@ internal fun Stat.genCodeWithNewScope(
 
 internal val Type.size: Int
     get() = when (this) {
-        is Type.BaseType.TypeChar -> 1
+        is Type.BaseType.TypeChar,
+        is Type.BaseType.TypeBool -> 1
         else -> 4
     }
 
 internal val Type.memAccess: MemoryAccess
     get() = when (this) {
-        is Type.BaseType.TypeChar -> MemoryAccess.Byte
+        is Type.BaseType.TypeChar,
+        is Type.BaseType.TypeBool -> MemoryAccess.Byte
         else -> MemoryAccess.Word
+    }
+
+internal val Type.barrelShift: BarrelShift?
+    get() = when (this) {
+        is Type.BaseType.TypeChar,
+        is Type.BaseType.TypeBool -> null
+        else -> BarrelShift(2, BarrelShift.Type.LSL)
     }
 
 internal val Func.label: String
@@ -253,7 +262,6 @@ internal fun CodeGenContext.computeAddressOfArrayElem(
     instrs: MutableList<Instruction>
 ) {
     instrs.opWithConst(AddOp, offsetOfIdent(name), dst, StackPointer)
-    val isChar = typeOfIdent(name).let { type -> type is Type.ArrayType && type.type is Type.BaseType.TypeChar }
     for (expr in exprs) {
         takeReg()?.let { (_, ctx2) ->
             expr.genCode(ctx2, instrs) // Register implementation
@@ -268,7 +276,7 @@ internal fun CodeGenContext.computeAddressOfArrayElem(
         instrs.add(Move(R1, dst.op))
         branchBuiltin(checkArrayBounds, instrs) // check array bounds
         instrs.add(Op(AddOp, dst, dst, Imm(4))) // compute address of desired array elem
-        instrs.add(Op(AddOp, dst, dst, nxt.op, if (isChar) null else BarrelShift(2, BarrelShift.Type.LSL)))
+        instrs.add(Op(AddOp, dst, dst, nxt.op, typeOfIdent(name).barrelShift))
     }
 }
 
