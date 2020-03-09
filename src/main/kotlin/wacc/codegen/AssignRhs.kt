@@ -43,6 +43,7 @@ private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<
     val offset = if (accessor == PairAccessor.FST) null else Imm(4)
     ctx.computeAddressOfPairElem(expr, instrs)
     instrs.add(Load(ctx.dst, ctx.dst.op, offset))
+    instrs.add(Load(ctx.dst, ctx.dst.op, offset))
 }
 
 private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
