@@ -187,7 +187,7 @@ val freePair: BuiltinFunction = BuiltinFunction(listOf(
         Pop(ProgramCounter)
 ), listOf(throwRuntimeError) to listOf(nullPointerDereferenceString))
 
-val divideByZeroString: BuiltinString = "__s_divide_by_zero" to "DivideByZeroError: divide or modulo by zero\\n\\0"
+val divideByZeroString: BuiltinString = "__s_divide_by_zero" to "DivideByZeroError: divide or modulo by zero\n"
 val checkDivideByZero = BuiltinFunction(listOf(
         Label("__f_check_divide_by_zero"),
         Push(LinkRegister),
