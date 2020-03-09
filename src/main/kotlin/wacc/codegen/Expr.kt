@@ -52,7 +52,7 @@ private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
 
 private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     val regs = ctx.takeRegs(2, force = true)?.let { (_, ctx2) -> // Register implementation
-        if (expr1.weight <= expr2.weight) {
+        if (expr1.weight >= expr2.weight) {
             expr1.genCode(ctx2.withRegs(ctx.dst, ctx.nxt), instrs)
             expr2.genCode(ctx2.withRegs(ctx.nxt), instrs)
         } else {
