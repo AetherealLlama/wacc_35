@@ -39,19 +39,19 @@ internal class GlobalCodeGenData(
 internal class CodeGenContext(
     val global: GlobalCodeGenData,
     val func: Func?,
-    private val scopes: List<List<Pair<String, Type>>> = emptyList(),
+    private val scopes: List<Pair<List<Pair<String, Type>>, MutableSet<String>>> = emptyList(),
     private val stackOffset: Int = 0,
     private val availableRegs: List<Register> = usableRegs
 ) {
-    fun offsetOfIdent(ident: String): Int {
+    fun offsetOfIdent(ident: String, allowUndefined: Boolean = false): Int {
         var offset = stackOffset
         var found = false
-        for (scope in scopes) {
+        for ((scope, definedVars) in scopes) {
             for (varData in scope) {
                 val (name, memAcc) = varData
                 if (found)
                     offset += memAcc.size
-                found = found || (name == ident)
+                found = found || (name == ident && (ident in definedVars || allowUndefined))
             }
             if (found) {
                 break
@@ -75,16 +75,27 @@ internal class CodeGenContext(
         throw IllegalStateException()
     }
 
-    fun typeOfIdent(ident: String): Type =
-            scopes.flatten().firstOrNull { it.first == ident }?.second
-                    ?: func?.params?.firstOrNull { it.name == ident }?.type
-                    ?: throw IllegalStateException()
+    fun typeOfIdent(ident: String, allowUndefined: Boolean = false): Type {
+        scopes.forEach { (scope, definedVars) ->
+            scope.forEach { (name, type) ->
+                if (name == ident && (ident in definedVars || allowUndefined))
+                    return type
+            }
+        }
+        func?.params?.forEach { param ->
+            if (param.name == ident)
+                return param.type
+        }
+        throw IllegalStateException()
+    }
 
     fun takeReg(): Pair<Register, CodeGenContext>? =
             takeRegs(1)?.let { it.first[0] to it.second }
 
-    fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext =
-            CodeGenContext(global, func, listOf(newScope) + scopes, stackOffset, availableRegs)
+    fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext {
+        val newScopes = listOf(newScope to mutableSetOf<String>()) + scopes
+        return CodeGenContext(global, func, newScopes, stackOffset, availableRegs)
+    }
 
     fun takeRegs(n: Int, force: Boolean = false): Pair<List<Register>, CodeGenContext>? =
             if (availableRegs.size < n + (if (force) 1 else 2))
@@ -99,13 +110,17 @@ internal class CodeGenContext(
             CodeGenContext(global, func, scopes, offset, availableRegs)
 
     val dst: Register
-        get() = availableRegs[0]
+    get() = availableRegs[0]
 
     val nxt: Register
-        get() = availableRegs[1]
+    get() = availableRegs[1]
 
     internal val totalScopeOffset: Int
-        get() = scopes.sumBy { scope -> scope.sumBy { it.second.size } }
+    get() = scopes.sumBy { (scope, _) -> scope.sumBy { it.second.size } }
+
+    fun defineVar(ident: String) {
+        scopes.first().second.add(ident)
+    }
 }
 
 // </editor-fold>

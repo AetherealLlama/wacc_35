@@ -14,10 +14,10 @@ import wacc.codegen.types.Register.StackPointer
 
 private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
-    instrs.add(when (ctx.typeOfIdent(name)) {
-        is Type.BaseType.TypeChar -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)), access = MemoryAccess.Byte)
-        else -> Store(ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(name)))
-    })
+    val offset = Imm(ctx.offsetOfIdent(name, allowUndefined = true))
+    val access = ctx.typeOfIdent(name, allowUndefined = true).memAccess
+    instrs.add(Store(ctx.dst, StackPointer, offset, access = access))
+    ctx.defineVar(name)
 }
 
 private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
