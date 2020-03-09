@@ -13,10 +13,7 @@ import wacc.codegen.types.Operation.*
 import wacc.codegen.types.Register.StackPointer
 
 private fun Expr.Literal.IntLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    if (value in 0..255)
-        instrs.add(Move(ctx.dst, Imm(value.toInt())))
-    else
-        instrs.add(Load(ctx.dst, Imm(value.toInt())))
+    instrs.add(Load(ctx.dst, Imm(value.toInt())))
 }
 
 private fun Expr.Literal.BoolLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
