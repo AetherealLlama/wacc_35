@@ -47,7 +47,7 @@ private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<
 }
 
 private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    val func = ctx.global.program.funcs.first { it.name == name }
+    val func = ctx.global.program.funcs.first { it.name == name && it.overloadIx == overloadIx }
     var totalOffset = 0
     if (func.params.isNotEmpty()) {
         for ((type, expr) in func.params.map(Param::type).zip(args).reversed()) {
