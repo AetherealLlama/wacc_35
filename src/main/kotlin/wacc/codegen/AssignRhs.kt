@@ -3,6 +3,7 @@ package wacc.codegen
 import wacc.ast.AssignRhs
 import wacc.ast.PairAccessor
 import wacc.ast.Param
+import wacc.ast.Type
 import wacc.codegen.types.Instruction
 import wacc.codegen.types.Instruction.*
 import wacc.codegen.types.Operand
@@ -47,10 +48,13 @@ private fun AssignRhs.PairElem.genCode(ctx: CodeGenContext, instrs: MutableList<
 }
 
 private fun AssignRhs.Call.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
-    val func = ctx.global.program.funcs.first { it.name == name && it.overloadIx == overloadIx }
+    val func = (cls?.funcs ?: ctx.global.program.funcs.asList())
+            .first { it.name == name && it.overloadIx == overloadIx }
+    var params = func.params.map(Param::type).zip(args).reversed()
+    cls?.let { params = params + (Type.ClassType(it.name) to classExpr!!) }
     var totalOffset = 0
-    if (func.params.isNotEmpty()) {
-        for ((type, expr) in func.params.map(Param::type).zip(args).reversed()) {
+    if (params.isNotEmpty()) {
+        for ((type, expr) in params) {
             expr.genCode(ctx.withStackOffset(totalOffset), instrs)
             instrs.add(Store(ctx.dst, StackPointer, Imm(type.size), plus = false, moveReg = true, access = type.memAccess))
             totalOffset += type.size
@@ -70,11 +74,4 @@ internal fun AssignRhs.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
     is AssignRhs.Newpair -> genCode(ctx, instrs)
     is AssignRhs.PairElem -> genCode(ctx, instrs)
     is AssignRhs.Call -> genCode(ctx, instrs)
-}
-
-private fun CodeGenContext.malloc(size: Int, instrs: MutableList<Instruction>) {
-    instrs.add(Load(R0, Imm(size)))
-    instrs.add(BranchLink(Operand.Label("malloc")))
-    if (dst.toString() != R0.toString())
-        instrs.add(Move(dst, R0.op))
 }
