@@ -244,7 +244,7 @@ internal val Type.barrelShift: BarrelShift?
     }
 
 internal val Func.label: String
-    get() = "f_$name"
+    get() = "f_${name}_$overloadIx"
 
 internal fun CodeGenContext.branchBuiltin(
     f: BuiltinFunction,

@@ -6,16 +6,29 @@ import wacc.ast.*
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>
 
-fun Program.checkSemantics(): Errors =
-        funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
-                stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
-
-private fun Func.checkSemantics(ctx: SemanticContext): Errors {
-    var errors: Errors = emptyList()
-    if (ctx.funcs.filter { it.name == this.name }.size > 1)
-        errors += FunctionRedefinition(name, pos)
-    return errors + stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
+fun Program.checkSemantics(): Errors {
+    val knownFuncs = mutableMapOf<String, MutableList<Func>>()
+    return funcs.mapNotNull { it.checkOverload(knownFuncs) } +
+            funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
+            stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
 }
+
+private fun Func.checkOverload(knownFuncs: MutableMap<String, MutableList<Func>>): SemanticError? {
+    val funcsWithSameName = knownFuncs.getOrPut(name, ::mutableListOf)
+    funcsWithSameName.withIndex().firstOrNull { this matchesAllParams it.value }?.let { (ix, _) ->
+        overloadIx = ix
+        return FunctionRedefinition(name, pos)
+    }
+    overloadIx = funcsWithSameName.size
+    funcsWithSameName.add(this)
+    return null
+}
+
+private infix fun Func.matchesAllParams(other: Func): Boolean = params.size == other.params.size &&
+        params.zip(other.params).all { (thisParam, otherParam) -> thisParam.type matches otherParam.type }
+
+private fun Func.checkSemantics(ctx: SemanticContext): Errors =
+        stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
 
 private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = when (this) {
     is Stat.Skip -> ctx.currentScope to emptyList()
@@ -152,18 +165,22 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         type = pairCheck.first
         pairCheck.first to errors + pairCheck.second
     }
-    is AssignRhs.Call -> ctx.funcs.find { it.name == name }?.let { funcDef: Func ->
-        val errors = emptyList<ProgramError>().toMutableList()
-        if (funcDef.params.size != this.args.size)
-            errors.add(CallWrongNumberOfArguments(args.size, funcDef.params.size, funcDef.name, pos))
-        else
-            for (i in funcDef.params.zip(args)) {
-                val (argType, argError) = i.second.checkSemantics(ctx)
-                if (!(argType matches i.first.type))
-                    errors.add(TypeMismatch(i.first.type, argType, pos))
+    is AssignRhs.Call -> ctx.funcs.filter { it.name == name }.let { funcs ->
+        funcs.forEach { func ->
+            val errors = emptyList<ProgramError>().toMutableList()
+            if (func.params.size != args.size)
+                return@forEach
+            for ((param, arg) in func.params.zip(args)) {
+                val (argType, argError) = arg.checkSemantics(ctx)
+                errors.addAll(argError)
+                if (!(argType matches param.type))
+                    return@forEach
             }
-        funcDef.type to errors
-    } ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
+            overloadIx = func.overloadIx
+            return func.type to errors
+        }
+        return Type.AnyType to listOf(FunctionNotFoundError(name, pos))
+    }
 }
 
 // <editor-fold desc="Common type checkers, to keep things dry">
