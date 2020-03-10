@@ -8,7 +8,7 @@ class AssignLhsVisitor : WaccParserBaseVisitor<AssignLhs>() {
     private val exprVisitor = ExprVisitor()
 
     override fun visitAssignLhsVariable(ctx: WaccParser.AssignLhsVariableContext): AssignLhs {
-        val expr = exprVisitor.visit(ctx.expr())
+        val expr = ctx.expr()?.let { exprVisitor.visit(it) }
         val name = ctx.IDENT().text
         return AssignLhs.Variable(ctx.pos, expr, name)
     }
@@ -51,7 +51,7 @@ class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>() {
     }
 
     override fun visitAssignRhsCall(ctx: WaccParser.AssignRhsCallContext): AssignRhs {
-        val expr = exprVisitor.visit(ctx.expr())
+        val expr = ctx.expr()?.let { exprVisitor.visit(it) }
         val name = ctx.IDENT().text
         val args = ctx.argList()?.expr()?.map(exprVisitor::visit)?.toTypedArray() ?: emptyArray()
         return AssignRhs.Call(ctx.pos, expr, name, args)
