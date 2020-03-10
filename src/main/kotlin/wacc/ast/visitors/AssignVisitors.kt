@@ -54,6 +54,10 @@ class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>() {
         val args = ctx.argList()?.expr()?.map(exprVisitor::visit)?.toTypedArray() ?: emptyArray()
         return AssignRhs.Call(ctx.pos, name, args)
     }
+
+    override fun visitAssignRhsNewInstance(ctx: WaccParser.AssignRhsNewInstanceContext?): AssignRhs {
+        return TODO()
+    }
 }
 
 private fun getPairElemFromPairElemContext(ctx: WaccParser.PairElemContext): Pair<PairAccessor, Expr> {

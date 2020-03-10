@@ -37,6 +37,8 @@ BOOL: 'bool' ;
 CHAR: 'char' ;
 STRING: 'string' ;
 NULL: 'null' ;
+CLASS: 'class' ;
+NEWKW: 'new' ;
 
 // Parens and Brackets
 OPEN_PAREN: '(' ;
@@ -48,6 +50,7 @@ CLOSE_SQUARE_BR: ']' ;
 COMMA: ',' ;
 EQUALS: '=' ;
 SEMICOLON: ';' ;
+DOT: '.' ;
 
 // Operators
 BANG: '!' ;
