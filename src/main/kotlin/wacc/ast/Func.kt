@@ -12,6 +12,7 @@ package wacc.ast
 
 class Func(pos: FilePos, val type: Type, val name: String, val params: Array<Param>, val stat: Stat) : ASTNode(pos) {
     var overloadIx: Int = -1
+    var cls: Class? = null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

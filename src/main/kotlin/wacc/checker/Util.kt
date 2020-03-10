@@ -14,6 +14,7 @@ internal infix fun Type.matches(other: Type): Boolean {
         return (this.type1.asNormalType matches other.type1.asNormalType) &&
                 (this.type2.asNormalType matches other.type2.asNormalType)
     }
+    if (this is Type.ClassType && other is Type.ClassType) return this.className == other.className
     return this.javaClass == other.javaClass
 }
 
