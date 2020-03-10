@@ -39,8 +39,6 @@ assignRhs: expr                                                        # AssignR
          | NEWPAIR OPEN_PAREN expr COMMA expr CLOSE_PAREN              # AssignRhsNewpair
          | pairElem                                                    # AssignRhsPairElem
          | CALL (expr DOT)? IDENT OPEN_PAREN argList? CLOSE_PAREN      # AssignRhsCall
-         | expr DOT IDENT                                              # AssignRhsClassField
-         | NEWKW IDENT                                                 # AssignRhsNewInstance
          ;
 
 argList: expr (COMMA expr)* ;
@@ -66,6 +64,8 @@ expr: integer                                             # Int
     | expr op=(PLUS | MINUS) expr                         # BinaryOpExpr
     | expr op=(GT | GTE | LT | LTE | EQ | NEQ) expr       # BinaryOpExpr
     | expr op=(LAND | LOR) expr                           # BinaryOpExpr
+    | expr DOT IDENT                                      # ClassFieldExpr
+    | NEWKW IDENT                                         # InstantiateExpr
     | OPEN_PAREN expr CLOSE_PAREN                         # ParensExpr
     ;
 
