@@ -99,6 +99,7 @@ sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
 
             if (name != other.name) return false
             if (!args.contentEquals(other.args)) return false
+            if (classExpr != other.classExpr) return false
 
             return true
         }

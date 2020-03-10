@@ -48,11 +48,13 @@ pairElem: acc=(FST | SND) expr ;
 type: bt=(INT | BOOL | CHAR | STRING)                              # BaseType
     | type OPEN_SQUARE_BR CLOSE_SQUARE_BR                          # ArrayType
     | PAIR OPEN_PAREN pairElemType COMMA pairElemType CLOSE_PAREN  # PairType
+    | IDENT                                                        # ClassType
     ;
 
 pairElemType: bt=(INT | BOOL | CHAR | STRING)     # BasePairElemType
             | type OPEN_SQUARE_BR CLOSE_SQUARE_BR # ArrayPairElemType
             | PAIR                                # PairPairElemType
+            | IDENT                               # ClassPairElemType
             ;
 
 expr: integer                                             # Int
