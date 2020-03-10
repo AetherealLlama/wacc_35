@@ -168,6 +168,8 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
     is AssignRhs.Call -> ctx.funcs.filter { it.name == name }.let { funcs ->
         funcs.forEach { func ->
             val errors = emptyList<ProgramError>().toMutableList()
+            if (func.params.size != args.size)
+                return@forEach
             for ((param, arg) in func.params.zip(args)) {
                 val (argType, argError) = arg.checkSemantics(ctx)
                 errors.addAll(argError)
