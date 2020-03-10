@@ -91,4 +91,15 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
     override fun visitParensExpr(ctx: WaccParser.ParensExprContext?): Expr {
         return visit(ctx?.expr())
     }
+
+    override fun visitClassFieldExpr(ctx: WaccParser.ClassFieldExprContext): Expr {
+        val expr = visit(ctx.expr())
+        val name = ctx.IDENT().text
+        return Expr.ClassField(ctx.pos, expr, name)
+    }
+
+    override fun visitInstantiateExpr(ctx: WaccParser.InstantiateExprContext): Expr {
+        val name = ctx.IDENT().text
+        return Expr.Instantiate(ctx.pos, name)
+    }
 }

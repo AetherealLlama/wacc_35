@@ -134,6 +134,8 @@ internal fun Expr.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>)
     is Expr.ArrayElem -> genCode(ctx, instrs)
     is Expr.UnaryOp -> genCode(ctx, instrs)
     is Expr.BinaryOp -> genCode(ctx, instrs)
+    is Expr.ClassField -> TODO()
+    is Expr.Instantiate -> TODO()
 }
 
 private fun Pair<Register, Register>.assignBool(cond: Condition, instrs: MutableList<Instruction>) {

@@ -122,6 +122,8 @@ private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when
             errors += BinaryArgsMismatch(arg1Type, arg2Type, operator, pos)
         operator.returnType to errors
     }
+    is Expr.ClassField -> TODO()
+    is Expr.Instantiate -> TODO()
 }
 
 private fun AssignLhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {

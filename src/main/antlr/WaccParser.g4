@@ -4,11 +4,11 @@ options {
     tokenVocab=WaccLexer;
 }
 
-program: BEGIN clazz* func* stat END EOF ;
+program: BEGIN cls* func* stat END EOF ;
 
 func: type IDENT OPEN_PAREN paramList? CLOSE_PAREN IS stat END ;
 
-clazz: CLASS IDENT IS (param SEMICOLON)* func*  END ;
+cls: CLASS IDENT IS (param SEMICOLON)* func*  END ;
 
 paramList: param (COMMA param)* ;
 
@@ -30,8 +30,8 @@ stat: SKIPKW                          # Skip
     ;
 
 assignLhs: (expr DOT)? IDENT      # AssignLhsVariable
-         | arrayElem  # AssignLhsArrayElem
-         | pairElem   # AssignLhsPairElem
+         | arrayElem              # AssignLhsArrayElem
+         | pairElem               # AssignLhsPairElem
          ;
 
 assignRhs: expr                                                        # AssignRhsExpr

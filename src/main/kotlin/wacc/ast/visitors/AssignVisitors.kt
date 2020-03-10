@@ -7,9 +7,10 @@ import wacc.ast.*
 class AssignLhsVisitor : WaccParserBaseVisitor<AssignLhs>() {
     private val exprVisitor = ExprVisitor()
 
-    override fun visitAssignLhsVariable(ctx: WaccParser.AssignLhsVariableContext?): AssignLhs {
-        val name = ctx?.IDENT()?.text!!
-        return AssignLhs.Variable(ctx.pos, name)
+    override fun visitAssignLhsVariable(ctx: WaccParser.AssignLhsVariableContext): AssignLhs {
+        val expr = exprVisitor.visit(ctx.expr())
+        val name = ctx.IDENT().text
+        return AssignLhs.Variable(ctx.pos, expr, name)
     }
 
     override fun visitAssignLhsArrayElem(ctx: WaccParser.AssignLhsArrayElemContext?): AssignLhs {
@@ -49,14 +50,11 @@ class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>() {
         return AssignRhs.PairElem(ctx.pos, pair.first, pair.second)
     }
 
-    override fun visitAssignRhsCall(ctx: WaccParser.AssignRhsCallContext?): AssignRhs {
-        val name = ctx?.IDENT()?.text!!
+    override fun visitAssignRhsCall(ctx: WaccParser.AssignRhsCallContext): AssignRhs {
+        val expr = exprVisitor.visit(ctx.expr())
+        val name = ctx.IDENT().text
         val args = ctx.argList()?.expr()?.map(exprVisitor::visit)?.toTypedArray() ?: emptyArray()
-        return AssignRhs.Call(ctx.pos, name, args)
-    }
-
-    override fun visitAssignRhsNewInstance(ctx: WaccParser.AssignRhsNewInstanceContext?): AssignRhs {
-        return TODO()
+        return AssignRhs.Call(ctx.pos, expr, name, args)
     }
 }
 

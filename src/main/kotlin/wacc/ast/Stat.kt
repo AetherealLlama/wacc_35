@@ -30,7 +30,7 @@ sealed class Stat(pos: FilePos, val vars: List<Pair<String, Type>> = emptyList()
  * or array element.
  */
 sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
-    class Variable(pos: FilePos, val name: String) : AssignLhs(pos)
+    class Variable(pos: FilePos, val expr: Expr?, val name: String) : AssignLhs(pos)
     class ArrayElem(pos: FilePos, val name: String, val exprs: Array<Expr>) : AssignLhs(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -88,7 +88,7 @@ sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
         lateinit var type: Type
     }
 
-    class Call(pos: FilePos, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
+    class Call(pos: FilePos, val expr: Expr?, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
         var overloadIx: Int = -1
 
         override fun equals(other: Any?): Boolean {
