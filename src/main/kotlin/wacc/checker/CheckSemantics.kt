@@ -165,18 +165,20 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         type = pairCheck.first
         pairCheck.first to errors + pairCheck.second
     }
-    is AssignRhs.Call -> ctx.funcs.find { it.name == name }?.let { funcDef: Func ->
-        val errors = emptyList<ProgramError>().toMutableList()
-        if (funcDef.params.size != this.args.size)
-            errors.add(CallWrongNumberOfArguments(args.size, funcDef.params.size, funcDef.name, pos))
-        else
-            for (i in funcDef.params.zip(args)) {
-                val (argType, argError) = i.second.checkSemantics(ctx)
-                if (!(argType matches i.first.type))
-                    errors.add(TypeMismatch(i.first.type, argType, pos))
+    is AssignRhs.Call -> ctx.funcs.filter { it.name == name }.let { funcs ->
+        funcs.forEach { func ->
+            val errors = emptyList<ProgramError>().toMutableList()
+            for ((param, arg) in func.params.zip(args)) {
+                val (argType, argError) = arg.checkSemantics(ctx)
+                errors.addAll(argError)
+                if (!(argType matches param.type))
+                    return@forEach
             }
-        funcDef.type to errors
-    } ?: Type.AnyType to listOf(IdentNotFoundError(name, pos))
+            overloadIx = func.overloadIx
+            return func.type to errors
+        }
+        return Type.AnyType to listOf(FunctionNotFoundError(name, pos))
+    }
 }
 
 // <editor-fold desc="Common type checkers, to keep things dry">
