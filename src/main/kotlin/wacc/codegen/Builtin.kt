@@ -187,6 +187,17 @@ val freePair: BuiltinFunction = BuiltinFunction(listOf(
         Pop(ProgramCounter)
 ), listOf(throwRuntimeError) to listOf(nullPointerDereferenceString))
 
+val nullPointerFreeString: BuiltinString = "__s_null_pointer_free" to "NullReferenceError: freeing a null reference\n"
+val freeInstance: BuiltinFunction = BuiltinFunction(listOf(
+        Label("__f_free_instance"),
+        Push(LinkRegister),
+        Compare(R0, Imm(0)),
+        Load(R0, nullPointerFreeString.label, condition = Equal),
+        Branch(throwRuntimeError.label, condition = Equal),
+        BranchLink(Operand.Label("free")),
+        Pop(StackPointer)
+), listOf(throwRuntimeError) to listOf(nullPointerFreeString))
+
 val divideByZeroString: BuiltinString = "__s_divide_by_zero" to "DivideByZeroError: divide or modulo by zero\n"
 val checkDivideByZero = BuiltinFunction(listOf(
         Label("__f_check_divide_by_zero"),

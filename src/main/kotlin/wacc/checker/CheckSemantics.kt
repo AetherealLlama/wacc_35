@@ -78,8 +78,9 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
     }
     is Stat.Free -> expr.checkSemantics(ctx).let { (type, errors) ->
         var typeError = emptyList<ProgramError>()
-        if (listOf(Type.ArrayType(Type.AnyType), ANY_PAIR).none { type matches it })
+        if (listOf(Type.ArrayType(Type.AnyType), ANY_PAIR).none { type matches it } && type !is Type.ClassType)
             typeError = listOf(FreeTypeMismatch(type, pos))
+        this.type = type
         ctx.currentScope to errors + typeError
     }
     is Stat.Return -> expr.checkSemantics(ctx).let { (type, expErrors) ->

@@ -78,7 +78,12 @@ private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instructi
 private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     expr.genCode(ctx, instrs)
     instrs.add(Move(R0, ctx.dst.op))
-    ctx.branchBuiltin(freePair, instrs)
+    val func = when (type) {
+        is Type.PairType -> freePair
+        is Type.ClassType -> freeInstance
+        else -> throw IllegalStateException()
+    }
+    ctx.branchBuiltin(func, instrs)
 }
 
 private fun Stat.Return.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
