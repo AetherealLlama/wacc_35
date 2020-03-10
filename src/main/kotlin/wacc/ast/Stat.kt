@@ -89,6 +89,8 @@ sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
     }
 
     class Call(pos: FilePos, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
+        var overloadIx: Int = -1
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
