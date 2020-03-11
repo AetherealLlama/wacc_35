@@ -44,6 +44,17 @@ private val Include.library: Pair<Int, Program?>
         val libraryVisitor = LibraryVisitor()
         val library = libraryVisitor.visit(tree)
 
+        val (code, fullLib) = library.fullProgram
+        if (code != RETURN_CODE_OK)
+            return code to null
+
+        val errors = fullLib!!.checkSemantics().reversed()
+        errors.sorted().forEach(::println)
+        if (errors.any { !it.isSemantic })
+            return RETURN_CODE_SYNTACTIC_ERROR to null
+        if (errors.any { it.isSemantic })
+            return RETURN_CODE_SEMANTIC_ERROR to null
+
         return RETURN_CODE_OK to library
     }
 
