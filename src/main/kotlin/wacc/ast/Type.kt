@@ -23,7 +23,7 @@ sealed class Type {
         override val display: String
             get() = "(${type1.asNormalType.display}, ${type1.asNormalType.display})"
     }
-    data class ClassType(val className: String): Type() {
+    data class ClassType(val className: String) : Type() {
         override val display: String
             get() = className
     }

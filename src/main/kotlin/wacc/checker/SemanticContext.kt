@@ -1,8 +1,8 @@
 package wacc.checker
 
+import wacc.ast.Class
 import wacc.ast.Func
 import wacc.ast.Program
-import wacc.ast.Class
 
 class SemanticContext(
     val program: Program,
