@@ -266,10 +266,10 @@ private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Typ
 }
 
 private fun checkArrayElem(
-        name: Expr.Ident,
-        exprs: Array<Expr>,
-        ctx: SemanticContext,
-        pos: FilePos
+    name: Expr.Ident,
+    exprs: Array<Expr>,
+    ctx: SemanticContext,
+    pos: FilePos
 ): Pair<Type, Errors> {
     val (arrayType, arrayErrors) = name.checkSemantics(ctx)
     val exprErrors = exprs.map { it.checkSemantics(ctx) }.flatMap { it.second }
