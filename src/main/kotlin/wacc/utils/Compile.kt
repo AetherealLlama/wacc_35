@@ -49,7 +49,7 @@ private val Include.library: Pair<Int, Program?>
             return code to null
 
         val errors = fullLib!!.checkSemantics().reversed()
-        errors.sorted().forEach(::println)
+        errors.sorted().forEach { println("$filename: $it") }
         if (errors.any { !it.isSemantic })
             return RETURN_CODE_SYNTACTIC_ERROR to null
         if (errors.any { it.isSemantic })
@@ -126,7 +126,7 @@ class Compile : Callable<Int>, Logging {
 
         // Check for further syntax and semantic errors from the tree
         val errors = fullProgram!!.checkSemantics().reversed()
-        errors.sorted().forEach(::println)
+        errors.sorted().forEach { println("${file!!.name}: $it") }
         if (errors.any { !it.isSemantic })
             return RETURN_CODE_SYNTACTIC_ERROR
         if (errors.any { it.isSemantic })
