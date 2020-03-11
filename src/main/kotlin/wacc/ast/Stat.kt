@@ -13,7 +13,7 @@ sealed class Stat(pos: FilePos, val vars: List<Pair<String, Type>> = emptyList()
     class AssignNew(pos: FilePos, val type: Type, val name: String, val rhs: AssignRhs) : Stat(pos, listOf(name to type))
     class Assign(pos: FilePos, val lhs: AssignLhs, val rhs: AssignRhs) : Stat(pos)
     class Read(pos: FilePos, val lhs: AssignLhs) : Stat(pos) { lateinit var type: Type }
-    class Free(pos: FilePos, val expr: Expr) : Stat(pos)
+    class Free(pos: FilePos, val expr: Expr) : Stat(pos) { lateinit var type: Type }
     class Return(pos: FilePos, val expr: Expr) : Stat(pos)
     class Exit(pos: FilePos, val expr: Expr) : Stat(pos)
     class IfThenElse(pos: FilePos, val expr: Expr, val branch1: Stat, val branch2: Stat) : Stat(pos)
@@ -30,7 +30,10 @@ sealed class Stat(pos: FilePos, val vars: List<Pair<String, Type>> = emptyList()
  * or array element.
  */
 sealed class AssignLhs(pos: FilePos) : ASTNode(pos) {
-    class Variable(pos: FilePos, val name: String) : AssignLhs(pos)
+    class Variable(pos: FilePos, val classExpr: Expr?, val name: String) : AssignLhs(pos) {
+        var cls: Class? = null
+    }
+
     class ArrayElem(pos: FilePos, val name: String, val exprs: Array<Expr>) : AssignLhs(pos) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -88,8 +91,9 @@ sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
         lateinit var type: Type
     }
 
-    class Call(pos: FilePos, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
+    class Call(pos: FilePos, val classExpr: Expr?, val name: String, val args: Array<Expr>) : AssignRhs(pos) {
         var overloadIx: Int = -1
+        var cls: Class? = null
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -99,6 +103,7 @@ sealed class AssignRhs(pos: FilePos) : ASTNode(pos) {
 
             if (name != other.name) return false
             if (!args.contentEquals(other.args)) return false
+            if (classExpr != other.classExpr) return false
 
             return true
         }

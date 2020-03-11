@@ -123,6 +123,15 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
     }
 }
 
+private fun Expr.ClassField.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    expr.genCode(ctx, instrs)
+    instrs.add(Load(ctx.dst, ctx.dst.op, Imm(cls.offsetOfField(ident)), access = cls.typeOfField(ident).memAccess))
+}
+
+private fun Expr.Instantiate.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
+    ctx.malloc(cls.fields.sumBy { it.type.size }, instrs)
+}
+
 // Delegates code gen to more specific functions
 internal fun Expr.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) = when (this) {
     is Expr.Literal.IntLiteral -> genCode(ctx, instrs)
@@ -134,6 +143,8 @@ internal fun Expr.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>)
     is Expr.ArrayElem -> genCode(ctx, instrs)
     is Expr.UnaryOp -> genCode(ctx, instrs)
     is Expr.BinaryOp -> genCode(ctx, instrs)
+    is Expr.ClassField -> genCode(ctx, instrs)
+    is Expr.Instantiate -> genCode(ctx, instrs)
 }
 
 private fun Pair<Register, Register>.assignBool(cond: Condition, instrs: MutableList<Instruction>) {

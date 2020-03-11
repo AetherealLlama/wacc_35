@@ -23,12 +23,19 @@ private fun Stat.AssignNew.genCode(ctx: CodeGenContext, instrs: MutableList<Inst
 private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     rhs.genCode(ctx, instrs)
     when (lhs) {
-        is AssignLhs.Variable -> instrs.add(Store(
-                ctx.dst,
-                StackPointer,
-                Imm(ctx.offsetOfIdent(lhs.name)),
-                access = ctx.typeOfIdent(lhs.name).memAccess
-        ))
+        is AssignLhs.Variable -> {
+            val (reg, offset, type) = lhs.cls?.let { cls ->
+                lhs.classExpr!!.genCode(ctx.takeReg()!!.second, instrs)
+                Triple(ctx.nxt, cls.offsetOfField(lhs.name), cls.typeOfField(lhs.name))
+            } ?: Triple(StackPointer, ctx.offsetOfIdent(lhs.name), ctx.typeOfIdent(lhs.name))
+
+            instrs.add(Store(
+                    ctx.dst,
+                    reg,
+                    Imm(offset),
+                    access = type.memAccess
+            ))
+        }
         is AssignLhs.ArrayElem -> {
             ctx.takeReg()!!.second.computeAddressOfArrayElem(lhs.name, lhs.exprs, instrs) // nxt = address of elem
             instrs.add(Store(ctx.dst, ctx.nxt, access = (ctx.typeOfIdent(lhs.name) as Type.ArrayType).type.memAccess))
@@ -45,7 +52,11 @@ private fun Stat.Assign.genCode(ctx: CodeGenContext, instrs: MutableList<Instruc
 private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     when (lhs) {
         is AssignLhs.Variable -> {
-            instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(ctx.offsetOfIdent(lhs.name))))
+            val offset = lhs.cls?.let { cls ->
+                lhs.classExpr!!.genCode(ctx, instrs)
+                cls.offsetOfField(lhs.name)
+            } ?: ctx.offsetOfIdent(lhs.name)
+            instrs.add(Op(AddOp, ctx.dst, StackPointer, Imm(offset)))
         }
         is AssignLhs.ArrayElem -> {
             ctx.computeAddressOfArrayElem(lhs.name, lhs.exprs, instrs)
@@ -67,7 +78,12 @@ private fun Stat.Read.genCode(ctx: CodeGenContext, instrs: MutableList<Instructi
 private fun Stat.Free.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     expr.genCode(ctx, instrs)
     instrs.add(Move(R0, ctx.dst.op))
-    ctx.branchBuiltin(freePair, instrs)
+    val func = when (type) {
+        is Type.PairType -> freePair
+        is Type.ClassType -> freeInstance
+        else -> throw IllegalStateException()
+    }
+    ctx.branchBuiltin(func, instrs)
 }
 
 private fun Stat.Return.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
@@ -96,7 +112,8 @@ private fun Stat.Print.genCode(ctx: CodeGenContext, instrs: MutableList<Instruct
             is Type.BaseType.TypeChar -> ctx.branchBuiltin(printString, instrs)
             else -> ctx.branchBuiltin(printReference, instrs)
         }
-        is Type.PairType -> ctx.branchBuiltin(printReference, instrs)
+        is Type.PairType,
+        is Type.ClassType -> ctx.branchBuiltin(printReference, instrs)
         else -> throw IllegalStateException()
     }
 }

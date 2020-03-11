@@ -41,4 +41,12 @@ sealed class Expr(pos: FilePos) : ASTNode(pos) {
 
     class UnaryOp(pos: FilePos, val operator: UnaryOperator, val expr: Expr) : Expr(pos)
     class BinaryOp(pos: FilePos, val operator: BinaryOperator, val expr1: Expr, val expr2: Expr) : Expr(pos)
+
+    class ClassField(pos: FilePos, val expr: Expr, val ident: String) : Expr(pos) {
+        lateinit var cls: Class
+    }
+
+    class Instantiate(pos: FilePos, val className: String) : Expr(pos) {
+        lateinit var cls: Class
+    }
 }

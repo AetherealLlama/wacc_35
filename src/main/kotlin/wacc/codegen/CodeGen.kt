@@ -41,6 +41,7 @@ internal class GlobalCodeGenData(
 internal class CodeGenContext(
     val global: GlobalCodeGenData,
     val func: Func?,
+    val cls: Class?,
     private val scopes: List<Pair<List<Pair<String, Type>>, MutableSet<String>>> = emptyList(),
     private val stackOffset: Int = 0,
     private val availableRegs: List<Register> = usableRegs
@@ -67,6 +68,12 @@ internal class CodeGenContext(
         if (func != null) {
             // move past vars in the current scopes, leave space for return address!
             offset = stackOffset + totalScopeOffset + 4
+            cls?.let {
+                if (ident == "this")
+                    return offset
+                else
+                    offset += Type.ClassType(cls.name).size
+            }
             for (param in func.params) {
                 if (param.name == ident)
                     return offset
@@ -84,6 +91,7 @@ internal class CodeGenContext(
                     return type
             }
         }
+        cls?.let { if (ident == "this") return Type.ClassType(cls.name) }
         func?.params?.forEach { param ->
             if (param.name == ident)
                 return param.type
@@ -96,20 +104,20 @@ internal class CodeGenContext(
 
     fun withNewScope(newScope: List<Pair<String, Type>>): CodeGenContext {
         val newScopes = listOf(newScope to mutableSetOf<String>()) + scopes
-        return CodeGenContext(global, func, newScopes, stackOffset, availableRegs)
+        return CodeGenContext(global, func, cls, newScopes, stackOffset, availableRegs)
     }
 
     fun takeRegs(n: Int, force: Boolean = false): Pair<List<Register>, CodeGenContext>? =
             if (availableRegs.size < n + (if (force) 1 else 2))
                 null
             else
-                availableRegs.take(n) to CodeGenContext(global, func, scopes, stackOffset, availableRegs.drop(n))
+                availableRegs.take(n) to CodeGenContext(global, func, cls, scopes, stackOffset, availableRegs.drop(n))
 
     fun withRegs(vararg regs: Register) =
-            CodeGenContext(global, func, scopes, stackOffset, regs.asList() + availableRegs)
+            CodeGenContext(global, func, cls, scopes, stackOffset, regs.asList() + availableRegs)
 
     fun withStackOffset(offset: Int) =
-            CodeGenContext(global, func, scopes, offset, availableRegs)
+            CodeGenContext(global, func, cls, scopes, offset, availableRegs)
 
     val dst: Register
     get() = availableRegs[0]
@@ -143,8 +151,10 @@ fun Program.getAsm(): String {
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
-    val funcs = funcs.map { it.genCode(global) }.toMutableList()
-    val statCtx = CodeGenContext(global, func = null)
+    val funcs = mutableListOf<List<Instruction>>()
+    funcs.addAll(classes.flatMap { cls -> cls.funcs.map { it.genCode(global, cls = cls) } })
+    funcs.addAll(this.funcs.map { it.genCode(global, cls = null) })
+    val statCtx = CodeGenContext(global, func = null, cls = null)
 
     // Assemble the top-level statement
     val topLevelStat = emptyList<Instruction>() +
@@ -168,8 +178,8 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     return Section.DataSection(strings) to Section.TextSection(funcs)
 }
 
-private fun Func.genCode(global: GlobalCodeGenData): List<Instruction> {
-    val ctx = CodeGenContext(global, func = this)
+private fun Func.genCode(global: GlobalCodeGenData, cls: Class?): List<Instruction> {
+    val ctx = CodeGenContext(global, func = this, cls = cls)
     val instrs = mutableListOf<Instruction>()
 
     instrs.add(Special.Label(label))
@@ -244,7 +254,7 @@ internal val Type.barrelShift: BarrelShift?
     }
 
 internal val Func.label: String
-    get() = "f_${name}_$overloadIx"
+    get() = (cls?.let { "c_${it.name}_" } ?: "") + "f_${name}_$overloadIx"
 
 internal fun CodeGenContext.branchBuiltin(
     f: BuiltinFunction,
@@ -296,5 +306,18 @@ internal fun CodeGenContext.computeAddressOfPairElem(expr: Expr, instrs: Mutable
     instrs.add(Move(R0, dst.op))
     branchBuiltin(checkNullPointer, instrs)
 }
+
+internal fun CodeGenContext.malloc(size: Int, instrs: MutableList<Instruction>) {
+    instrs.add(Load(R0, Imm(size)))
+    instrs.add(BranchLink(Operand.Label("malloc")))
+    if (dst.toString() != R0.toString())
+        instrs.add(Move(dst, R0.op))
+}
+
+internal fun Class.offsetOfField(field: String) =
+        fields.takeWhile { it.name != field }.sumBy { it.type.size }
+
+internal fun Class.typeOfField(field: String) =
+        fields.first { it.name == field }.type
 
 // </editor-fold>

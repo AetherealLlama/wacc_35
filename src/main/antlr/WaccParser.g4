@@ -4,9 +4,11 @@ options {
     tokenVocab=WaccLexer;
 }
 
-program: BEGIN func* stat END EOF ;
+program: BEGIN cls* func* stat END EOF ;
 
 func: type IDENT OPEN_PAREN paramList? CLOSE_PAREN IS stat END ;
+
+cls: CLASS IDENT IS (param SEMICOLON)* func*  END ;
 
 paramList: param (COMMA param)* ;
 
@@ -27,16 +29,16 @@ stat: SKIPKW                          # Skip
     | stat SEMICOLON stat             # Compose
     ;
 
-assignLhs: IDENT      # AssignLhsVariable
-         | arrayElem  # AssignLhsArrayElem
-         | pairElem   # AssignLhsPairElem
+assignLhs: (expr DOT)? IDENT      # AssignLhsVariable
+         | arrayElem              # AssignLhsArrayElem
+         | pairElem               # AssignLhsPairElem
          ;
 
-assignRhs: expr                                            # AssignRhsExpr
-         | arrayLiter                                      # AssignRhsArrayLiter
-         | NEWPAIR OPEN_PAREN expr COMMA expr CLOSE_PAREN  # AssignRhsNewpair
-         | pairElem                                        # AssignRhsPairElem
-         | CALL IDENT OPEN_PAREN argList? CLOSE_PAREN      # AssignRhsCall
+assignRhs: expr                                                        # AssignRhsExpr
+         | arrayLiter                                                  # AssignRhsArrayLiter
+         | NEWPAIR OPEN_PAREN expr COMMA expr CLOSE_PAREN              # AssignRhsNewpair
+         | pairElem                                                    # AssignRhsPairElem
+         | CALL (expr DOT)? IDENT OPEN_PAREN argList? CLOSE_PAREN      # AssignRhsCall
          ;
 
 argList: expr (COMMA expr)* ;
@@ -46,11 +48,13 @@ pairElem: acc=(FST | SND) expr ;
 type: bt=(INT | BOOL | CHAR | STRING)                              # BaseType
     | type OPEN_SQUARE_BR CLOSE_SQUARE_BR                          # ArrayType
     | PAIR OPEN_PAREN pairElemType COMMA pairElemType CLOSE_PAREN  # PairType
+    | IDENT                                                        # ClassType
     ;
 
 pairElemType: bt=(INT | BOOL | CHAR | STRING)     # BasePairElemType
             | type OPEN_SQUARE_BR CLOSE_SQUARE_BR # ArrayPairElemType
             | PAIR                                # PairPairElemType
+            | IDENT                               # ClassPairElemType
             ;
 
 expr: integer                                             # Int
@@ -62,6 +66,8 @@ expr: integer                                             # Int
     | expr op=(PLUS | MINUS) expr                         # BinaryOpExpr
     | expr op=(GT | GTE | LT | LTE | EQ | NEQ) expr       # BinaryOpExpr
     | expr op=(LAND | LOR) expr                           # BinaryOpExpr
+    | expr DOT IDENT                                      # ClassFieldExpr
+    | NEWKW IDENT                                         # InstantiateExpr
     | OPEN_PAREN expr CLOSE_PAREN                         # ParensExpr
     ;
 

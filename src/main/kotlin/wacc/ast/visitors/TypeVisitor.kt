@@ -27,6 +27,10 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
         return Type.PairType(type1, type2)
     }
 
+    override fun visitClassType(ctx: WaccParser.ClassTypeContext?): Type {
+        return Type.ClassType(ctx!!.IDENT().text)
+    }
+
     inner class PairElemTypeVisitor : WaccParserBaseVisitor<Type.PairElemType>() {
         // Bit of an ugly hack to avoid recursive dependencies
         private val typeVisitor: TypeVisitor = this@TypeVisitor

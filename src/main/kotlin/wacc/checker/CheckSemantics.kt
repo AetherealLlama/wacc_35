@@ -6,18 +6,34 @@ import wacc.ast.*
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>
 
-fun Program.checkSemantics(): Errors {
-    val knownFuncs = mutableMapOf<String, MutableList<Func>>()
-    return funcs.mapNotNull { it.checkOverload(knownFuncs) } +
-            funcs.flatMap { it.checkSemantics(SemanticContext(funcs, it, true)) } +
-            stat.checkSemantics(SemanticContext(funcs, null, false).withNewScope()).second
-}
+fun Program.checkSemantics(): Errors =
+        classes.flatMap { cls ->
+            cls.checkDuplicateFields() +
+                    mutableMapOf<String, MutableList<Func>>().let { cls.funcs.mapNotNull { f -> f.checkOverload(it, cls) } } +
+                    cls.funcs.flatMap { it.checkSemantics(SemanticContext(this, it, cls, true)) }
+        } +
+                mutableMapOf<String, MutableList<Func>>().let { funcs.mapNotNull { f -> f.checkOverload(it) } } +
+                funcs.flatMap { it.checkSemantics(SemanticContext(this, it, null, true)) } +
+                stat.checkSemantics(SemanticContext(this, null, null, false).withNewScope()).second
 
-private fun Func.checkOverload(knownFuncs: MutableMap<String, MutableList<Func>>): SemanticError? {
+private fun Class.checkDuplicateFields(): Errors =
+        with(mutableSetOf<String>()) {
+            fields.mapNotNull {
+                if (it.name in this) {
+                    DuplicateDeclarationError("${this@checkDuplicateFields.name}.${it.name}", it.pos)
+                } else {
+                    this.add(it.name)
+                    null
+                }
+            }
+        }
+
+private fun Func.checkOverload(knownFuncs: MutableMap<String, MutableList<Func>>, cls: Class? = null): SemanticError? {
+    cls?.let { this.cls = cls }
     val funcsWithSameName = knownFuncs.getOrPut(name, ::mutableListOf)
     funcsWithSameName.withIndex().firstOrNull { this matchesAllParams it.value }?.let { (ix, _) ->
         overloadIx = ix
-        return FunctionRedefinition(name, pos)
+        return FunctionRedefinition((cls?.let { it.name + "." } ?: "") + name, pos)
     }
     overloadIx = funcsWithSameName.size
     funcsWithSameName.add(this)
@@ -27,8 +43,11 @@ private fun Func.checkOverload(knownFuncs: MutableMap<String, MutableList<Func>>
 private infix fun Func.matchesAllParams(other: Func): Boolean = params.size == other.params.size &&
         params.zip(other.params).all { (thisParam, otherParam) -> thisParam.type matches otherParam.type }
 
-private fun Func.checkSemantics(ctx: SemanticContext): Errors =
-        stat.checkSemantics(ctx.withNewScope(params.map { it.name to it.type })).second
+private fun Func.checkSemantics(ctx: SemanticContext): Errors {
+    var params = params.map { it.name to it.type }
+    ctx.cls?.let { params = listOf("this" to Type.ClassType(it.name)) + params }
+    return stat.checkSemantics(ctx.withNewScope(params)).second
+}
 
 private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = when (this) {
     is Stat.Skip -> ctx.currentScope to emptyList()
@@ -58,8 +77,9 @@ private fun Stat.checkSemantics(ctx: SemanticContext): Pair<Scope, Errors> = whe
     }
     is Stat.Free -> expr.checkSemantics(ctx).let { (type, errors) ->
         var typeError = emptyList<ProgramError>()
-        if (listOf(Type.ArrayType(Type.AnyType), ANY_PAIR).none { type matches it })
+        if (listOf(Type.ArrayType(Type.AnyType), ANY_PAIR).none { type matches it } && type !is Type.ClassType)
             typeError = listOf(FreeTypeMismatch(type, pos))
+        this.type = type
         ctx.currentScope to errors + typeError
     }
     is Stat.Return -> expr.checkSemantics(ctx).let { (type, expErrors) ->
@@ -122,10 +142,38 @@ private fun Expr.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when
             errors += BinaryArgsMismatch(arg1Type, arg2Type, operator, pos)
         operator.returnType to errors
     }
+    is Expr.ClassField -> {
+        val (exprType, exprErrors) = expr.checkSemantics(ctx)
+        if (exprType !is Type.ClassType) {
+            Type.AnyType to (exprErrors + TypeMismatch(Type.ClassType("[some class]"), exprType, pos))
+        } else {
+            val cls = ctx.program.classes.first { it.name == exprType.className }
+            this.cls = cls
+            cls.fields.firstOrNull { it.name == ident }?.let {
+                it.type to exprErrors
+            } ?: Type.AnyType to (exprErrors + IdentNotFoundError("${cls.name}.$ident", pos))
+        }
+    }
+    is Expr.Instantiate ->
+        ctx.program.classes.find { it.name == className }?.let { cls ->
+            this.cls = cls
+            (Type.ClassType(className) to emptyList<ProgramError>())
+        } ?: Type.AnyType to listOf(IdentNotFoundError(className, pos))
 }
 
 private fun AssignLhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> = when (this) {
-    is AssignLhs.Variable -> checkIdent(name, ctx, pos)
+    is AssignLhs.Variable -> classExpr?.let {
+        val (exprType, exprErrors) = classExpr.checkSemantics(ctx)
+        if (exprType !is Type.ClassType) {
+            return Type.AnyType to (exprErrors + TypeMismatch(Type.ClassType("[some class]"), exprType, pos))
+        } else {
+            val cls = ctx.program.classes.first { it.name == exprType.className }
+            this.cls = cls
+            cls.fields.firstOrNull { it.name == name }?.let {
+                it.type to exprErrors
+            } ?: Type.AnyType to (exprErrors + IdentNotFoundError("${cls.name}.$name", pos))
+        }
+    } ?: checkIdent(name, ctx, pos)
     is AssignLhs.ArrayElem -> checkArrayElem(Expr.Ident(pos, name), exprs, ctx, pos)
     is AssignLhs.PairElem -> {
         val errors: Errors =
@@ -165,21 +213,35 @@ private fun AssignRhs.checkSemantics(ctx: SemanticContext): Pair<Type, Errors> =
         type = pairCheck.first
         pairCheck.first to errors + pairCheck.second
     }
-    is AssignRhs.Call -> ctx.funcs.filter { it.name == name }.let { funcs ->
-        funcs.forEach { func ->
-            val errors = emptyList<ProgramError>().toMutableList()
-            if (func.params.size != args.size)
-                return@forEach
-            for ((param, arg) in func.params.zip(args)) {
-                val (argType, argError) = arg.checkSemantics(ctx)
-                errors.addAll(argError)
-                if (!(argType matches param.type))
-                    return@forEach
+    is AssignRhs.Call -> {
+        val (potentialFuncs, cls) = classExpr?.let {
+            val (exprType, exprErrors) = it.checkSemantics(ctx)
+            if (exprType !is Type.ClassType) {
+                return Type.AnyType to
+                        (exprErrors + TypeMismatch(Type.ClassType("[some class]"), exprType, pos))
+            } else {
+                ctx.program.classes.firstOrNull { it.name == exprType.className }?.let {
+                    this.cls = it
+                    it.funcs to it
+                } ?: return Type.AnyType to (exprErrors + IdentNotFoundError(exprType.className, pos))
             }
-            overloadIx = func.overloadIx
-            return func.type to errors
+        } ?: ctx.program.funcs.asList() to null
+        potentialFuncs.filter { it.name == name }.let { funcs ->
+            funcs.forEach { func ->
+                val errors = emptyList<ProgramError>().toMutableList()
+                if (func.params.size != args.size)
+                    return@forEach
+                for ((param, arg) in func.params.zip(args)) {
+                    val (argType, argError) = arg.checkSemantics(ctx)
+                    errors.addAll(argError)
+                    if (!(argType matches param.type))
+                        return@forEach
+                }
+                overloadIx = func.overloadIx
+                return func.type to errors
+            }
+            return Type.AnyType to listOf(FunctionNotFoundError((cls?.let { it.name + "." } ?: "") + name, pos))
         }
-        return Type.AnyType to listOf(FunctionNotFoundError(name, pos))
     }
 }
 
@@ -196,18 +258,18 @@ private fun Expr.checkBool(ctx: SemanticContext): Errors {
 private fun Expr.checkPairElem(ctx: SemanticContext): (PairAccessor) -> Pair<Type, Errors> {
     val (exprType, exprErrors) = checkSemantics(ctx)
     return if (exprType matches ANY_PAIR) { accessor ->
-            when (accessor) {
-                PairAccessor.FST -> (exprType as Type.PairType).type1
-                PairAccessor.SND -> (exprType as Type.PairType).type2
-            }.let { pairElemType -> pairElemType.asNormalType to exprErrors }
-        } else { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
+        when (accessor) {
+            PairAccessor.FST -> (exprType as Type.PairType).type1
+            PairAccessor.SND -> (exprType as Type.PairType).type2
+        }.let { pairElemType -> pairElemType.asNormalType to exprErrors }
+    } else { _ -> Type.AnyType to exprErrors + TypeMismatch(ANY_PAIR, exprType, pos) }
 }
 
 private fun checkArrayElem(
-    name: Expr.Ident,
-    exprs: Array<Expr>,
-    ctx: SemanticContext,
-    pos: FilePos
+        name: Expr.Ident,
+        exprs: Array<Expr>,
+        ctx: SemanticContext,
+        pos: FilePos
 ): Pair<Type, Errors> {
     val (arrayType, arrayErrors) = name.checkSemantics(ctx)
     val exprErrors = exprs.map { it.checkSemantics(ctx) }.flatMap { it.second }

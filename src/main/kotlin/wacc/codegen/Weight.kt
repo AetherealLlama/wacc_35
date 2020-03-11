@@ -15,6 +15,8 @@ val Expr.weight: Int
         is Expr.ArrayElem -> (exprs.map { it.weight }.max() ?: 0) + 1
         is Expr.UnaryOp -> expr.weight
         is Expr.BinaryOp -> combineWeights(expr1.weight, expr2.weight)
+        is Expr.ClassField -> expr.weight
+        is Expr.Instantiate -> 1
     }
 
 fun combineWeights(w1: Int, w2: Int): Int =
