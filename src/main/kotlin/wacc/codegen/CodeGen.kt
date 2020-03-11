@@ -160,7 +160,7 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val topLevelStat = emptyList<Instruction>() +
             Special.Label("main") +
             Push(LinkRegister) +
-            mutableListOf<Instruction>().also { stat.genCodeWithNewScope(statCtx, it) } +
+            mutableListOf<Instruction>().also { stat?.genCodeWithNewScope(statCtx, it) ?: TODO() } +
             Load(R0, Imm(0)) +
             Pop(ProgramCounter) +
             Special.Ltorg

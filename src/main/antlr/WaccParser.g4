@@ -4,11 +4,15 @@ options {
     tokenVocab=WaccLexer;
 }
 
-program: BEGIN cls* func* stat END EOF ;
+program: BEGIN include* cls* func* stat END EOF ;
 
-func: type IDENT OPEN_PAREN paramList? CLOSE_PAREN IS stat END ;
+library: BEGIN include* cls* func* END EOF ;
+
+include: INCLUDE FILENAME SEMICOLON ;
 
 cls: CLASS IDENT IS (param SEMICOLON)* func*  END ;
+
+func: type IDENT OPEN_PAREN paramList? CLOSE_PAREN IS stat END ;
 
 paramList: param (COMMA param)* ;
 

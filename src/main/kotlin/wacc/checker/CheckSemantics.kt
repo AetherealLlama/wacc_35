@@ -14,7 +14,7 @@ fun Program.checkSemantics(): Errors =
         } +
                 mutableMapOf<String, MutableList<Func>>().let { funcs.mapNotNull { f -> f.checkOverload(it) } } +
                 funcs.flatMap { it.checkSemantics(SemanticContext(this, it, null, true)) } +
-                stat.checkSemantics(SemanticContext(this, null, null, false).withNewScope()).second
+                (stat?.checkSemantics(SemanticContext(this, null, null, false).withNewScope())?.second ?: emptyList())
 
 private fun Class.checkDuplicateFields(): Errors =
         with(mutableSetOf<String>()) {

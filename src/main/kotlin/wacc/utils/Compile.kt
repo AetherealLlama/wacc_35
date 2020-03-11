@@ -11,10 +11,62 @@ import picocli.CommandLine.*
 import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
 import wacc.RETURN_CODE_SYNTACTIC_ERROR
+import wacc.ast.Include
+import wacc.ast.Program
+import wacc.ast.visitors.LibraryVisitor
 import wacc.ast.visitors.ProgramVisitor
 import wacc.checker.SyntaxErrorListener
 import wacc.checker.checkSemantics
 import wacc.codegen.getAsm
+
+private val Include.library: Pair<Int, Program?>
+    get() {
+        val file = File(filename)
+        val inputStream = FileInputStream(file)
+        val charStream = CharStreams.fromStream(inputStream)
+
+        // Lex and parse the input
+        val lexer = WaccLexer(charStream)
+        val tokens = CommonTokenStream(lexer)
+        val parser = WaccParser(tokens)
+
+        // Replace error listener with our logging one
+        parser.removeErrorListeners()
+        parser.addErrorListener(SyntaxErrorListener())
+
+        val tree = parser.library()
+
+        if (parser.numberOfSyntaxErrors > 0) {
+            println("${parser.numberOfSyntaxErrors} syntax errors in $filename. Halting compilation.")
+            return RETURN_CODE_SYNTACTIC_ERROR to null
+        }
+
+        val libraryVisitor = LibraryVisitor()
+        val library = libraryVisitor.visit(tree)
+
+        return RETURN_CODE_OK to library
+    }
+
+private infix fun Program.including(library: Program): Program =
+        Program(null, library.classes + classes, library.funcs + funcs, stat)
+
+private val Program.fullProgram: Pair<Int, Program?>
+    get() =
+        if (includes!!.isEmpty())
+            RETURN_CODE_OK to this
+        else
+            includes.map(Include::library).map { (code, library) ->
+                if (code != RETURN_CODE_OK)
+                    code to null
+                else
+                    library!!.fullProgram
+            }.fold(RETURN_CODE_OK to this as Program?) { (progCode, program), (libCode, library) ->
+                when {
+                    progCode != RETURN_CODE_OK -> progCode to null as Program?
+                    libCode != RETURN_CODE_OK -> libCode to null as Program?
+                    else -> RETURN_CODE_OK to (program!! including library!!)
+                }
+            }
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
         mixinStandardHelpOptions = true, version = [wacc.VERSION])
@@ -57,15 +109,19 @@ class Compile : Callable<Int>, Logging {
         val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
 
+        val (code, fullProgram) = program.fullProgram
+        if (code != RETURN_CODE_OK)
+            return code
+
         // Check for further syntax and semantic errors from the tree
-        val errors = program.checkSemantics().reversed()
+        val errors = fullProgram!!.checkSemantics().reversed()
         errors.sorted().forEach(::println)
         if (errors.any { !it.isSemantic })
             return RETURN_CODE_SYNTACTIC_ERROR
         if (errors.any { it.isSemantic })
             return RETURN_CODE_SEMANTIC_ERROR
 
-        val programAsm = program.getAsm()
+        val programAsm = fullProgram.getAsm()
         if (stdout) {
             println(programAsm)
         } else {
