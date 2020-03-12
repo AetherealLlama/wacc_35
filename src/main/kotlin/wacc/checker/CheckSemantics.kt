@@ -1,8 +1,8 @@
 package wacc.checker
 
+import kotlin.math.pow
 import wacc.ast.*
 import wacc.utils.submit
-import kotlin.math.pow
 
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>

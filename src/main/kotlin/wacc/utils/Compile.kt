@@ -7,6 +7,9 @@ import java.io.FileInputStream
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import picocli.CommandLine.*
@@ -20,9 +23,6 @@ import wacc.ast.visitors.ProgramVisitor
 import wacc.checker.SyntaxErrorListener
 import wacc.checker.checkSemantics
 import wacc.codegen.getAsm
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 lateinit var executor: ExecutorService
 
@@ -75,7 +75,7 @@ private val Program.fullProgram: Pair<Int, Program?>
         if (includes!!.isEmpty()) {
             RETURN_CODE_OK to this
         } else {
-            includes.map { submit{
+            includes.map { submit {
                 val (code, library) = it.library
                 if (code != RETURN_CODE_OK)
                     code to null
