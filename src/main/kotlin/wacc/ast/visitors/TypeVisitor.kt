@@ -36,7 +36,6 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
         private val typeVisitor: TypeVisitor = this@TypeVisitor
 
         override fun visitBasePairElemType(ctx: WaccParser.BasePairElemTypeContext?): Type.PairElemType {
-            // TODO: find a way to remove code duplication here
             return when (ctx?.bt?.type) {
                 WaccLexer.INT -> Type.BaseType.TypeInt
                 WaccLexer.BOOL -> Type.BaseType.TypeBool

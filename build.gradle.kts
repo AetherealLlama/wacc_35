@@ -21,6 +21,8 @@ repositories {
 }
 
 dependencies {
+    val koin_version = "2.1.3"
+
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
@@ -32,6 +34,10 @@ dependencies {
     implementation("ch.qos.logback:logback-core:1.2.3")
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.3.61")
+
+    // Koin for dependency injection
+    implementation("org.koin:koin-core:$koin_version")
+    testImplementation("org.koin:koin-test:$koin_version")
 
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")
