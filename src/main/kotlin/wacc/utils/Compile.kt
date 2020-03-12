@@ -20,6 +20,13 @@ import wacc.ast.visitors.ProgramVisitor
 import wacc.checker.SyntaxErrorListener
 import wacc.checker.checkSemantics
 import wacc.codegen.getAsm
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+
+lateinit var executor: ExecutorService
+
+fun <T> submit(f: () -> T): Future<T> = executor.submit(Callable(f))
 
 private val Include.library: Pair<Int, Program?>
     get() {
@@ -65,21 +72,24 @@ private infix fun Program.including(library: Program): Program =
 
 private val Program.fullProgram: Pair<Int, Program?>
     get() =
-        if (includes!!.isEmpty())
+        if (includes!!.isEmpty()) {
             RETURN_CODE_OK to this
-        else
-            includes.map(Include::library).map { (code, library) ->
+        } else {
+            includes.map { submit{
+                val (code, library) = it.library
                 if (code != RETURN_CODE_OK)
                     code to null
                 else
                     library!!.fullProgram
-            }.fold(RETURN_CODE_OK to this as Program?) { (progCode, program), (libCode, library) ->
+            } }.fold(RETURN_CODE_OK to this as Program?) { (progCode, program), libFuture ->
+                val (libCode, library) = libFuture.get()
                 when {
                     progCode != RETURN_CODE_OK -> progCode to null as Program?
                     libCode != RETURN_CODE_OK -> libCode to null as Program?
                     else -> RETURN_CODE_OK to (program!! including library!!)
                 }
             }
+        }
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
         mixinStandardHelpOptions = true, version = [wacc.VERSION])
@@ -99,7 +109,12 @@ class Compile : Callable<Int>, Logging {
     @Option(names = ["-m", "--measure"], description = ["Print compilation time"])
     private var measure = false
 
+    @Option(names = ["-j", "--threads"], description = ["The maximum number of threads"])
+    private var threadCount = Runtime.getRuntime().availableProcessors()
+
     override fun call(): Int {
+        executor = Executors.newWorkStealingPool(threadCount)
+
         // Generate input from file
         val inputStream = FileInputStream(file!!)
         val charStream = CharStreams.fromStream(inputStream)
