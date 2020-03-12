@@ -12,6 +12,7 @@ import wacc.codegen.types.Operand.Reg
 import wacc.codegen.types.Operation.AddOp
 import wacc.codegen.types.Operation.SubOp
 import wacc.codegen.types.Register.*
+import wacc.utils.submit
 
 // <editor-fold desc="Constants">
 
@@ -151,20 +152,28 @@ fun Program.getAsm(): String {
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
-    val funcs = mutableListOf<List<Instruction>>()
-    funcs.addAll(classes.flatMap { cls -> cls.funcs.map { it.genCode(global, cls = cls) } })
-    funcs.addAll(this.funcs.map { it.genCode(global, cls = null) })
-    val statCtx = CodeGenContext(global, func = null, cls = null)
 
-    // Assemble the top-level statement
-    val topLevelStat = emptyList<Instruction>() +
-            Special.Label("main") +
-            Push(LinkRegister) +
-            mutableListOf<Instruction>().also { stat!!.genCodeWithNewScope(statCtx, it) } +
-            Load(R0, Imm(0)) +
-            Pop(ProgramCounter) +
-            Special.Ltorg
-    funcs.add(topLevelStat)
+    // Compile functions
+    val classFuncsFutures = classes.flatMap { cls -> cls.funcs.map { f -> submit { f.genCode(global, cls = cls) } } }
+    val funcsFutures = funcs.map { submit { it.genCode(global, cls = null) } }
+
+    // Compile top-level stat
+    val topLevelStatFuture = submit {
+        val statCtx = CodeGenContext(global, func = null, cls = null)
+        emptyList<Instruction>() +
+                Special.Label("main") +
+                Push(LinkRegister) +
+                mutableListOf<Instruction>().also { stat!!.genCodeWithNewScope(statCtx, it) } +
+                Load(R0, Imm(0)) +
+                Pop(ProgramCounter) +
+                Special.Ltorg
+    }
+
+    val classFuncs = classFuncsFutures.map { it.get() }
+    val funcs = funcsFutures.map { it.get() }
+    val topLevelStat = topLevelStatFuture.get()
+
+    val userFuncs = listOf(classFuncs, funcs, listOf(topLevelStat)).flatten()
 
     // Collect strings from user code and used builtin functions
     val strings: List<InitializedDatum> = (
@@ -173,9 +182,10 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
             ).toSet().toList()
 
     // Collect all dependencies on built-in functions
-    funcs.addAll(global.usedBuiltins.flatMap { it.functionDeps }.toSet().map { it.function })
+    val usedBuiltinFuncs = global.usedBuiltins.flatMap { it.functionDeps }.toSet().map { it.function }
+    val fullCode = userFuncs + usedBuiltinFuncs
 
-    return Section.DataSection(strings) to Section.TextSection(funcs)
+    return Section.DataSection(strings) to Section.TextSection(fullCode)
 }
 
 private fun Func.genCode(global: GlobalCodeGenData, cls: Class?): List<Instruction> {
