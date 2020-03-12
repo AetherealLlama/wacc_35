@@ -4,6 +4,8 @@ import WaccLexer
 import WaccParser
 import java.io.File
 import java.io.FileInputStream
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.Callable
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
@@ -83,6 +85,7 @@ private val Program.fullProgram: Pair<Int, Program?>
         mixinStandardHelpOptions = true, version = [wacc.VERSION])
 class Compile : Callable<Int>, Logging {
     private val logger = logger()
+    private val start = Instant.now()
 
     @Parameters(index = "0", description = ["WACC program source to compile"])
     private var file: File? = null
@@ -92,6 +95,9 @@ class Compile : Callable<Int>, Logging {
 
     @Option(names = ["-t", "--stdout"], description = ["Print output to STDOUT"])
     private var stdout = false
+
+    @Option(names = ["-m", "--measure"], description = ["Print compilation time"])
+    private var measure = false
 
     override fun call(): Int {
         // Generate input from file
@@ -112,25 +118,34 @@ class Compile : Callable<Int>, Logging {
         // Check for syntax errors from
         if (parser.numberOfSyntaxErrors > 0) {
             println("${parser.numberOfSyntaxErrors} syntax errors. Halting compilation.")
+            printTimeToRun()
             return RETURN_CODE_SYNTACTIC_ERROR
-        } else if (!semantic)
+        } else if (!semantic) {
+            printTimeToRun()
             return RETURN_CODE_OK
+        }
 
         // Generate the AST
         val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
 
         val (code, fullProgram) = program.fullProgram
-        if (code != RETURN_CODE_OK)
+        if (code != RETURN_CODE_OK) {
+            printTimeToRun()
             return code
+        }
 
         // Check for further syntax and semantic errors from the tree
         val errors = fullProgram!!.checkSemantics().reversed()
         errors.sorted().forEach { println("${file!!.name}: $it") }
-        if (errors.any { !it.isSemantic })
+        if (errors.any { !it.isSemantic }) {
+            printTimeToRun()
             return RETURN_CODE_SYNTACTIC_ERROR
-        if (errors.any { it.isSemantic })
+        }
+        if (errors.any { it.isSemantic }) {
+            printTimeToRun()
             return RETURN_CODE_SEMANTIC_ERROR
+        }
 
         val programAsm = fullProgram.getAsm()
         if (stdout) {
@@ -140,6 +155,15 @@ class Compile : Callable<Int>, Logging {
             asmFile.writeText(programAsm)
         }
 
+        printTimeToRun()
         return RETURN_CODE_OK
+    }
+
+    private fun printTimeToRun() {
+        if (measure) {
+            val finish = Instant.now()
+            val timeElapsed = Duration.between(start, finish).toMillis()
+            println("Compilation took ${timeElapsed}ms.")
+        }
     }
 }
