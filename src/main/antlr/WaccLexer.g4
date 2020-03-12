@@ -39,6 +39,7 @@ STRING: 'string' ;
 NULL: 'null' ;
 CLASS: 'class' ;
 NEWKW: 'new' ;
+INCLUDE: 'include' ;
 
 // Parens and Brackets
 OPEN_PAREN: '(' ;
@@ -76,6 +77,7 @@ fragment DIGIT: [0-9] ;
 IDENT: [_a-zA-Z] [_a-zA-Z0-9]* ;
 fragment CHARACTER: ~('\\' | '\'' | '"') | '\\' ESCAPEDCHARACTER ;
 fragment ESCAPEDCHARACTER: '0' | 'b' | 't' | 'n' | 'f' | 'r' | '"' | '\'' | '\\' ;
+FILENAME: [a-zA-Z0-9_]+.'waccl' ; // TODO: find a better file extension, 4 chars is too much
 
 // Ignore
 COMMENT: '#' ~[\r\n]* -> skip ;

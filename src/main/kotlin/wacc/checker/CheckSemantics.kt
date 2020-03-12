@@ -2,19 +2,32 @@ package wacc.checker
 
 import kotlin.math.pow
 import wacc.ast.*
+import wacc.utils.submit
 
 internal typealias Scope = List<Pair<String, Type>>
 internal typealias Errors = List<ProgramError>
 
-fun Program.checkSemantics(): Errors =
-        classes.flatMap { cls ->
-            cls.checkDuplicateFields() +
-                    mutableMapOf<String, MutableList<Func>>().let { cls.funcs.mapNotNull { f -> f.checkOverload(it, cls) } } +
-                    cls.funcs.flatMap { it.checkSemantics(SemanticContext(this, it, cls, true)) }
-        } +
-                mutableMapOf<String, MutableList<Func>>().let { funcs.mapNotNull { f -> f.checkOverload(it) } } +
-                funcs.flatMap { it.checkSemantics(SemanticContext(this, it, null, true)) } +
-                stat.checkSemantics(SemanticContext(this, null, null, false).withNewScope()).second
+fun Program.checkSemantics(): Errors {
+    // Check function signatures and assign overloadIx
+    val classDefErrors = classes.flatMap { cls ->
+        cls.checkDuplicateFields() +
+                mutableMapOf<String, MutableList<Func>>().let { cls.funcs.mapNotNull { f -> f.checkOverload(it, cls) } }
+    }
+    val funcOverloadErrors = mutableMapOf<String, MutableList<Func>>().let { funcs.mapNotNull { f -> f.checkOverload(it) } }
+
+    // Check semantics in parallel
+    val classSemanticErrorsFutures = classes.flatMap { cls -> cls.funcs.map { f ->
+        submit { f.checkSemantics(SemanticContext(this, f, cls, true)) }
+    } }
+    val funcSemanticErrorsFutures = funcs.map { submit { it.checkSemantics(SemanticContext(this, it, null, true)) } }
+    val statSemanticErrorsFuture = submit { stat?.checkSemantics(SemanticContext(this, null, null, false).withNewScope()) }
+
+    // Collect results
+    val classSemanticErrors = classSemanticErrorsFutures.flatMap { it.get() }
+    val funcSemanticErrors = funcSemanticErrorsFutures.flatMap { it.get() }
+    val statSemanticErrors = statSemanticErrorsFuture.get()?.second ?: emptyList()
+    return listOf(classDefErrors, funcOverloadErrors, classSemanticErrors, funcSemanticErrors, statSemanticErrors).flatten()
+}
 
 private fun Class.checkDuplicateFields(): Errors =
         with(mutableSetOf<String>()) {
@@ -28,7 +41,7 @@ private fun Class.checkDuplicateFields(): Errors =
             }
         }
 
-private fun Func.checkOverload(knownFuncs: MutableMap<String, MutableList<Func>>, cls: Class? = null): SemanticError? {
+private fun Func.checkOverload(knownFuncs: MutableMap<String, MutableList<Func>>, cls: Class? = null): ProgramError? {
     cls?.let { this.cls = cls }
     val funcsWithSameName = knownFuncs.getOrPut(name, ::mutableListOf)
     funcsWithSameName.withIndex().firstOrNull { this matchesAllParams it.value }?.let { (ix, _) ->
