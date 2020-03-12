@@ -12,6 +12,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
+import org.koin.core.KoinComponent
+import org.koin.core.inject
 import picocli.CommandLine.*
 import wacc.RETURN_CODE_OK
 import wacc.RETURN_CODE_SEMANTIC_ERROR
@@ -93,9 +95,10 @@ private val Program.fullProgram: Pair<Int, Program?>
 
 @Command(description = ["Compile a WACC program"], name = "wacc",
         mixinStandardHelpOptions = true, version = [wacc.VERSION])
-class Compile : Callable<Int>, Logging {
+class Compile : Callable<Int>, KoinComponent, Logging {
     private val logger = logger()
     private val start = Instant.now()
+    private val programVisitor: ProgramVisitor by inject()
 
     @Parameters(index = "0", description = ["WACC program source to compile"])
     private var file: File? = null
@@ -141,7 +144,6 @@ class Compile : Callable<Int>, Logging {
         }
 
         // Generate the AST
-        val programVisitor = ProgramVisitor()
         val program = programVisitor.visit(tree)
 
         val (code, fullProgram) = program.fullProgram

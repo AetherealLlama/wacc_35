@@ -2,13 +2,15 @@ package wacc.ast.visitors
 
 import WaccParser
 import WaccParserBaseVisitor
+import org.koin.core.KoinComponent
+import org.koin.core.inject
 import wacc.ast.Func
 import wacc.ast.Param
 import wacc.ast.pos
 
-class FunctionVisitor : WaccParserBaseVisitor<Func>() {
-    private val statVisitor = StatVisitor()
-    private val typeVisitor = TypeVisitor()
+class FunctionVisitor : WaccParserBaseVisitor<Func>(), KoinComponent {
+    private val statVisitor: StatVisitor by inject()
+    private val typeVisitor: TypeVisitor by inject()
 
     override fun visitFunc(ctx: WaccParser.FuncContext?): Func {
         val type = typeVisitor.visit(ctx?.type())

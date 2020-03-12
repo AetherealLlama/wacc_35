@@ -1,14 +1,16 @@
 package wacc.ast.visitors
 
 import WaccParserBaseVisitor
+import org.koin.core.KoinComponent
+import org.koin.core.inject
 import wacc.ast.Stat
 import wacc.ast.pos
 
-class StatVisitor : WaccParserBaseVisitor<Stat>() {
-    private val exprVisitor = ExprVisitor()
-    private val typeVisitor = TypeVisitor()
-    private val assignRhsVisitor = AssignRhsVisitor()
-    private val assignLhsVisitor = AssignLhsVisitor()
+class StatVisitor : WaccParserBaseVisitor<Stat>(), KoinComponent {
+    private val exprVisitor: ExprVisitor by inject()
+    private val typeVisitor: TypeVisitor by inject()
+    private val assignRhsVisitor: AssignRhsVisitor by inject()
+    private val assignLhsVisitor: AssignLhsVisitor by inject()
 
     override fun visitSkip(ctx: WaccParser.SkipContext?): Stat = Stat.Skip(ctx!!.pos)
 
