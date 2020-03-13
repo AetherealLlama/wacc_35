@@ -123,7 +123,7 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
         LOR -> instrs.add(Op(OrOp, ctx.dst, regs.first, regs.second.op))
         BAND -> instrs.add(Op(BitwiseAndOp, ctx.dst, regs.first, regs.second.op))
         BOR -> instrs.add(Op(BitwiseOrOp, ctx.dst, regs.first, regs.second.op))
-        BXOR -> TODO()
+        BXOR -> instrs.add(Op(BitwiseXorOp, ctx.dst, regs.first, regs.second.op))
         BLEFT -> TODO()
         BRIGHT -> TODO()
     }
