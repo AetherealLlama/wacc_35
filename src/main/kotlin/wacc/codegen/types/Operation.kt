@@ -47,4 +47,12 @@ sealed class Operation {
     object BitwiseXorOp : Operation() {
         override fun toString(): String = "EOR"
     }
+
+    object BitwiseLeftOp : Operation() {
+        override fun toString(): String = "LSL"
+    }
+
+    object BitwiseRightOp : Operation() {
+        override fun toString(): String = "ASR"
+    }
 }
