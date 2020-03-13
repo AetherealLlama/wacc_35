@@ -5,6 +5,8 @@ import java.lang.IllegalStateException
 typealias Function = List<Instruction>
 
 sealed class Instruction {
+    abstract val asAsm: String
+
     data class Op(
         val operation: Operation,
         val rd: Register,
@@ -14,18 +16,17 @@ sealed class Instruction {
         val condition: Condition = Condition.Always,
         val setCondCodes: Boolean = false
     ) : Instruction() {
-        override fun toString(): String {
-            return "\t" + when (operation) {
-                is Operation.DivOp -> TODO()
-                is Operation.ModOp -> TODO()
-                is Operation.NegateOp -> "EOR$condition $rd, $rn, #1"
-                else -> "$operation${if (setCondCodes) "S" else ""}$condition $rd, $rn, " + when (operand) {
-                    is Operand.Imm -> "#${operand.value}"
-                    is Operand.Reg -> operand.reg
-                    is Operand.Label -> throw IllegalStateException()
-                }
-            } + (shift?.let { ", $it" } ?: "")
-        }
+        override val asAsm: String =
+                "\t" + when (operation) {
+                    is Operation.DivOp -> TODO()
+                    is Operation.ModOp -> TODO()
+                    is Operation.NegateOp -> "EOR$condition $rd, $rn, #1"
+                    else -> "$operation${if (setCondCodes) "S" else ""}$condition $rd, $rn, " + when (operand) {
+                        is Operand.Imm -> "#${operand.value}"
+                        is Operand.Reg -> operand.reg
+                        is Operand.Label -> throw IllegalStateException()
+                    }
+                } + (shift?.let { ", ${it.asAsm}" } ?: "")
     }
 
     data class Load(
@@ -36,7 +37,9 @@ sealed class Instruction {
         val access: MemoryAccess = MemoryAccess.Word,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String {
+        override val asAsm: String
+
+        init {
             val access = if (this.access == MemoryAccess.Byte) MemoryAccess.SignedByte else this.access
             val builder = StringBuilder("\t")
             builder.append("LDR$condition$access $rd, ")
@@ -54,7 +57,7 @@ sealed class Instruction {
                     is Operand.Label -> throw IllegalStateException()
                 }
             })
-            return builder.toString()
+            asAsm = builder.toString()
         }
     }
 
@@ -64,7 +67,7 @@ sealed class Instruction {
         val rm: Register,
         val rs: Register
     ) : Instruction() {
-        override fun toString(): String = "\tSMULL $rdLo, $rdHi, $rm, $rs"
+        override val asAsm: String = "\tSMULL $rdLo, $rdHi, $rm, $rs"
     }
 
     data class Store(
@@ -76,14 +79,13 @@ sealed class Instruction {
         val access: MemoryAccess = MemoryAccess.Word,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String {
-            return "\tSTR$condition$access $rd, [$rn" + when (offset) {
-                is Operand.Imm -> if (offset.value == 0) "" else ", #${if (plus) offset.value else -offset.value}"
-                is Operand.Reg -> ", " + if (plus) "" else "-" + "${offset.reg}"
-                is Operand.Label -> throw IllegalStateException()
-                null -> ""
-            } + "]" + (if (moveReg) "!" else "")
-        }
+        override val asAsm: String =
+                "\tSTR$condition$access $rd, [$rn" + when (offset) {
+                    is Operand.Imm -> if (offset.value == 0) "" else ", #${if (plus) offset.value else -offset.value}"
+                    is Operand.Reg -> ", " + if (plus) "" else "-" + "${offset.reg}"
+                    is Operand.Label -> throw IllegalStateException()
+                    null -> ""
+                } + "]" + (if (moveReg) "!" else "")
     }
 
     data class Move(
@@ -91,11 +93,12 @@ sealed class Instruction {
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "\tMOV$condition $reg, " + when (operand) {
-            is Operand.Imm -> operand.toString()
-            is Operand.Reg -> "${operand.reg}"
-            is Operand.Label -> throw IllegalStateException()
-        }
+        override val asAsm: String =
+                "\tMOV$condition $reg, " + when (operand) {
+                    is Operand.Imm -> operand.toString()
+                    is Operand.Reg -> "${operand.reg}"
+                    is Operand.Label -> throw IllegalStateException()
+                }
     }
 
     data class Compare(
@@ -104,11 +107,11 @@ sealed class Instruction {
         val shift: BarrelShift? = null,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "\tCMP$condition $reg, " + when (operand) {
+        override val asAsm: String = "\tCMP$condition $reg, " + when (operand) {
             is Operand.Imm -> "#${operand.value}"
             is Operand.Reg -> "${operand.reg}"
             is Operand.Label -> throw IllegalStateException()
-        } + (shift?.let { ", $it" } ?: "")
+        } + (shift?.let { ", ${it.asAsm}" } ?: "")
     }
 
     data class Push(
@@ -117,7 +120,7 @@ sealed class Instruction {
     ) : Instruction() {
         constructor(vararg regs: Register, condition: Condition = Condition.Always) : this(regs.asList(), condition)
 
-        override fun toString(): String = "\tPUSH$condition {${regs.joinToString()}}"
+        override val asAsm: String = "\tPUSH$condition {${regs.joinToString()}}"
     }
 
     data class Pop(
@@ -126,14 +129,14 @@ sealed class Instruction {
     ) : Instruction() {
         constructor(vararg regs: Register, condition: Condition = Condition.Always) : this(regs.asList(), condition)
 
-        override fun toString(): String = "\tPOP$condition {${regs.joinToString()}}"
+        override val asAsm: String = "\tPOP$condition {${regs.joinToString()}}"
     }
 
     data class Branch(
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "\t" + when (operand) {
+        override val asAsm: String = "\t" + when (operand) {
             is Operand.Label -> "B$condition ${operand.label}"
             else -> throw IllegalStateException()
         }
@@ -143,31 +146,23 @@ sealed class Instruction {
         val operand: Operand,
         val condition: Condition = Condition.Always
     ) : Instruction() {
-        override fun toString(): String = "\t" + when (operand) {
+        override val asAsm: String = "\t" + when (operand) {
             is Operand.Label -> "BL$condition ${operand.label}"
             else -> throw IllegalStateException()
         }
     }
 
-    data class Shift(
-        val shift: LShift,
-        val rd: Register,
-        val rm: Register,
-        val operand: Operand,
-        val condition: Condition = Condition.Always
-    ) : Instruction()
-
     sealed class Special : Instruction() {
         data class Label(val name: String) : Special() {
-            override fun toString(): String = "$name:"
+            override val asAsm: String = "$name:"
         }
 
         object Ltorg : Special() {
-            override fun toString(): String = "\t.ltorg"
+            override val asAsm: String = "\t.ltorg"
         }
 
         data class Global(val label: String) : Special() {
-            override fun toString(): String = ".global $label"
+            override val asAsm: String = ".global $label"
         }
     }
 }
@@ -178,5 +173,5 @@ data class BarrelShift(val amount: Int, val type: Type) {
         ASR
     }
 
-    override fun toString(): String = "$type #$amount"
+    val asAsm: String = "$type #$amount"
 }

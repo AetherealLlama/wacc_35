@@ -144,7 +144,7 @@ fun Program.getAsm(): String {
     data.data.forEach { builder.appendln(it) }
     builder.appendln(".text")
     builder.appendln(".global main")
-    text.instructions.flatten().forEach { builder.appendln(it) }
+    text.instructions.flatten().forEach { builder.appendln(it.asAsm) }
     return builder.toString()
 }
 
