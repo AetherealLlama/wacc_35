@@ -71,6 +71,12 @@ EQ: '==' ;
 NEQ: '!=' ;
 LAND: '&&' ;
 LOR: '||' ;
+BAND: '&' ;
+BOR: '|' ;
+BNOT: '~' ;
+BXOR: '^' ;
+BLEFT: '<<' ;
+BRIGHT: '>>' ;
 
 // Identifiers
 fragment DIGIT: [0-9] ;

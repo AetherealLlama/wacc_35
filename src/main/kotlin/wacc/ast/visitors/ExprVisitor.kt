@@ -53,21 +53,22 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
         return Expr.ArrayElem(ctx.pos, Expr.Ident(ctx.pos, name), exprs)
     }
 
-    override fun visitUnaryOpExpr(ctx: WaccParser.UnaryOpExprContext?): Expr {
-        val operator = when (ctx?.op?.type) {
+    override fun visitUnaryOpExpr(ctx: WaccParser.UnaryOpExprContext): Expr {
+        val operator = when (ctx.op?.type) {
             WaccLexer.BANG -> UnaryOperator.BANG
             WaccLexer.MINUS -> UnaryOperator.MINUS
             WaccLexer.LEN -> UnaryOperator.LEN
             WaccLexer.ORD -> UnaryOperator.ORD
             WaccLexer.CHR -> UnaryOperator.CHR
-            else -> UnaryOperator.BANG
+            WaccLexer.BNOT -> UnaryOperator.BNOT
+            else -> throw IllegalStateException()
         }
-        val expr = visit(ctx?.expr())
-        return Expr.UnaryOp(ctx!!.pos, operator, expr)
+        val expr = visit(ctx.expr())
+        return Expr.UnaryOp(ctx.pos, operator, expr)
     }
 
-    override fun visitBinaryOpExpr(ctx: WaccParser.BinaryOpExprContext?): Expr {
-        val operator = when (ctx?.op?.type) {
+    override fun visitBinaryOpExpr(ctx: WaccParser.BinaryOpExprContext): Expr {
+        val operator = when (ctx.op?.type) {
             WaccLexer.MUL -> BinaryOperator.MUL
             WaccLexer.DIV -> BinaryOperator.DIV
             WaccLexer.MOD -> BinaryOperator.MOD
@@ -81,11 +82,16 @@ class ExprVisitor : WaccParserBaseVisitor<Expr>() {
             WaccLexer.NEQ -> BinaryOperator.NEQ
             WaccLexer.LAND -> BinaryOperator.LAND
             WaccLexer.LOR -> BinaryOperator.LOR
-            else -> BinaryOperator.MUL
+            WaccLexer.BAND -> BinaryOperator.BAND
+            WaccLexer.BOR -> BinaryOperator.BOR
+            WaccLexer.BXOR -> BinaryOperator.BXOR
+            WaccLexer.BLEFT -> BinaryOperator.BLEFT
+            WaccLexer.BRIGHT -> BinaryOperator.BRIGHT
+            else -> throw IllegalStateException()
         }
-        val expr1 = visit(ctx?.expr(0))
-        val expr2 = visit(ctx?.expr(1))
-        return Expr.BinaryOp(ctx!!.pos, operator, expr1, expr2)
+        val expr1 = visit(ctx.expr(0))
+        val expr2 = visit(ctx.expr(1))
+        return Expr.BinaryOp(ctx.pos, operator, expr1, expr2)
     }
 
     override fun visitParensExpr(ctx: WaccParser.ParensExprContext?): Expr {

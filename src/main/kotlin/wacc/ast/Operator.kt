@@ -8,7 +8,8 @@ enum class UnaryOperator {
     MINUS,
     LEN,
     ORD,
-    CHR
+    CHR,
+    BNOT
 }
 
 /**
@@ -27,5 +28,10 @@ enum class BinaryOperator {
     EQ,
     NEQ,
     LAND,
-    LOR
+    LOR,
+    BAND,
+    BOR,
+    BXOR,
+    BLEFT,
+    BRIGHT
 }
