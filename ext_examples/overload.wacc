@@ -1,0 +1,37 @@
+## Expected output:
+
+# n = 13
+# ch = s
+# f(n) = 1
+# f(ch) = 2
+
+
+begin
+    int f(int x) is
+        return 1
+    end
+
+    int f(char c) is
+        return 2
+    end
+
+
+    begin
+        int n = 13 ;
+        print "n = " ;
+        println n ;
+
+        char ch = 's' ;
+        print "ch = " ;
+        println ch ;
+
+
+        int fn = call f(n) ;
+        print "f(n) = " ;
+        println fn ;
+
+        int fch = call f(ch) ;
+        print "f(ch) = " ;
+        println fch
+    end
+end
