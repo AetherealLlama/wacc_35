@@ -63,7 +63,7 @@ private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
         }
         LEN -> instrs.add(Load(ctx.dst, ctx.dst.op))
         ORD, CHR -> {} // Chars and ints should be represented the same way; ignore conversion
-        BNOT -> TODO()
+        BNOT -> instrs.add(Op(BitwiseNotOp, ctx.dst, ctx.dst, ctx.dst.op))
     }
 }
 

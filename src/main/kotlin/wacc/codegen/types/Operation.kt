@@ -36,6 +36,10 @@ sealed class Operation {
 
     object NegateOp : Operation()
 
+    object BitwiseNotOp : Operation() {
+        override fun toString(): String = "MVN"
+    }
+
     object BitwiseAndOp : Operation() {
         override fun toString(): String = "AND"
     }

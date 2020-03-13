@@ -18,8 +18,6 @@ sealed class Instruction {
     ) : Instruction() {
         override val asAsm: String =
                 "\t" + when (operation) {
-                    is Operation.DivOp -> TODO()
-                    is Operation.ModOp -> TODO()
                     is Operation.NegateOp -> "EOR$condition $rd, $rn, #1"
                     else -> "$operation${if (setCondCodes) "S" else ""}$condition $rd, $rn, " + when (operand) {
                         is Operand.Imm -> "#${operand.value}"
