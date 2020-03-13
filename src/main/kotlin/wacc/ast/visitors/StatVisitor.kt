@@ -1,71 +1,64 @@
 package wacc.ast.visitors
 
 import WaccParserBaseVisitor
-import org.koin.core.KoinComponent
-import org.koin.core.inject
 import wacc.ast.Stat
 import wacc.ast.pos
 
-class StatVisitor : WaccParserBaseVisitor<Stat>(), KoinComponent {
-    private val exprVisitor: ExprVisitor by inject()
-    private val typeVisitor: TypeVisitor by inject()
-    private val assignRhsVisitor: AssignRhsVisitor by inject()
-    private val assignLhsVisitor: AssignLhsVisitor by inject()
-
+object StatVisitor : WaccParserBaseVisitor<Stat>() {
     override fun visitSkip(ctx: WaccParser.SkipContext?): Stat = Stat.Skip(ctx!!.pos)
 
     override fun visitAssignNew(ctx: WaccParser.AssignNewContext?): Stat {
-        val type = typeVisitor.visit(ctx?.type())
+        val type = TypeVisitor.visit(ctx?.type())
         val name = ctx?.IDENT()?.text!!
-        val rhs = assignRhsVisitor.visit(ctx.assignRhs())
+        val rhs = AssignRhsVisitor.visit(ctx.assignRhs())
         return Stat.AssignNew(ctx.pos, type, name, rhs)
     }
 
     override fun visitAssign(ctx: WaccParser.AssignContext?): Stat {
-        val lhs = assignLhsVisitor.visit(ctx?.assignLhs())
-        val rhs = assignRhsVisitor.visit(ctx?.assignRhs())
+        val lhs = AssignLhsVisitor.visit(ctx?.assignLhs())
+        val rhs = AssignRhsVisitor.visit(ctx?.assignRhs())
         return Stat.Assign(ctx!!.pos, lhs, rhs)
     }
 
     override fun visitRead(ctx: WaccParser.ReadContext?): Stat {
-        val lhs = assignLhsVisitor.visit(ctx?.assignLhs())
+        val lhs = AssignLhsVisitor.visit(ctx?.assignLhs())
         return Stat.Read(ctx!!.pos, lhs)
     }
 
     override fun visitFree(ctx: WaccParser.FreeContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         return Stat.Free(ctx!!.pos, expr)
     }
 
     override fun visitReturn(ctx: WaccParser.ReturnContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         return Stat.Return(ctx!!.pos, expr)
     }
 
     override fun visitExit(ctx: WaccParser.ExitContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         return Stat.Exit(ctx!!.pos, expr)
     }
 
     override fun visitPrint(ctx: WaccParser.PrintContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         return Stat.Print(ctx!!.pos, expr)
     }
 
     override fun visitPrintln(ctx: WaccParser.PrintlnContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         return Stat.Println(ctx!!.pos, expr)
     }
 
     override fun visitIfThenElse(ctx: WaccParser.IfThenElseContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         val stat1 = visit(ctx?.stat(0))
         val stat2 = visit(ctx?.stat(1))
         return Stat.IfThenElse(ctx!!.pos, expr, stat1, stat2)
     }
 
     override fun visitWhileDo(ctx: WaccParser.WhileDoContext?): Stat {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         val stat = visit(ctx?.stat())
         return Stat.WhileDo(ctx!!.pos, expr, stat)
     }

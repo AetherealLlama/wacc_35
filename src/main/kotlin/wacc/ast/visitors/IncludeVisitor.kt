@@ -4,7 +4,7 @@ import WaccParserBaseVisitor
 import wacc.ast.Include
 import wacc.ast.pos
 
-class IncludeVisitor : WaccParserBaseVisitor<Include>() {
+object IncludeVisitor : WaccParserBaseVisitor<Include>() {
     override fun visitInclude(ctx: WaccParser.IncludeContext): Include {
         val filename = ctx.FILENAME().text
         return Include(ctx.pos, filename)

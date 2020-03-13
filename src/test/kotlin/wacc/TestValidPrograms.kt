@@ -3,9 +3,6 @@ package wacc
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ErrorCollector
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import wacc.utils.waccModule
 
 class TestValidPrograms {
     @Rule
@@ -32,8 +29,6 @@ class TestValidPrograms {
 
     @Test
     fun runTests() {
-        startKoin { modules(waccModule) }
         directories.forEach { it.testPrograms(collector) }
-        stopKoin()
     }
 }

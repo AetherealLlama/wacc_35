@@ -4,9 +4,7 @@ import WaccParserBaseVisitor
 import java.lang.IllegalStateException
 import wacc.ast.Type
 
-class TypeVisitor : WaccParserBaseVisitor<Type>() {
-    private val pairElemTypeVisitor = PairElemTypeVisitor()
-
+object TypeVisitor : WaccParserBaseVisitor<Type>() {
     override fun visitBaseType(ctx: WaccParser.BaseTypeContext?): Type {
         return when (ctx?.bt?.type) {
             WaccLexer.INT -> Type.BaseType.TypeInt
@@ -22,8 +20,8 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
     }
 
     override fun visitPairType(ctx: WaccParser.PairTypeContext?): Type {
-        val type1 = pairElemTypeVisitor.visit(ctx?.pairElemType(0))
-        val type2 = pairElemTypeVisitor.visit(ctx?.pairElemType(1))
+        val type1 = PairElemTypeVisitor.visit(ctx?.pairElemType(0))
+        val type2 = PairElemTypeVisitor.visit(ctx?.pairElemType(1))
         return Type.PairType(type1, type2)
     }
 
@@ -31,9 +29,7 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
         return Type.ClassType(ctx!!.IDENT().text)
     }
 
-    inner class PairElemTypeVisitor : WaccParserBaseVisitor<Type.PairElemType>() {
-        // Bit of an ugly hack to avoid recursive dependencies
-        private val typeVisitor: TypeVisitor = this@TypeVisitor
+    object PairElemTypeVisitor : WaccParserBaseVisitor<Type.PairElemType>() {
 
         override fun visitBasePairElemType(ctx: WaccParser.BasePairElemTypeContext?): Type.PairElemType {
             return when (ctx?.bt?.type) {
@@ -46,7 +42,7 @@ class TypeVisitor : WaccParserBaseVisitor<Type>() {
         }
 
         override fun visitArrayPairElemType(ctx: WaccParser.ArrayPairElemTypeContext?): Type.PairElemType =
-                Type.ArrayType(typeVisitor.visit(ctx?.type()))
+                Type.ArrayType(TypeVisitor.visit(ctx?.type()))
 
         override fun visitPairPairElemType(ctx: WaccParser.PairPairElemTypeContext?): Type.PairElemType = Type.PairPairElem
     }

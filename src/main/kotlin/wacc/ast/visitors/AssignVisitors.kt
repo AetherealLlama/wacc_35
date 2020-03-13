@@ -2,15 +2,11 @@ package wacc.ast.visitors
 
 import WaccParser
 import WaccParserBaseVisitor
-import org.koin.core.KoinComponent
-import org.koin.core.inject
 import wacc.ast.*
 
-class AssignLhsVisitor : WaccParserBaseVisitor<AssignLhs>(), KoinComponent {
-    private val exprVisitor: ExprVisitor by inject()
-
+object AssignLhsVisitor : WaccParserBaseVisitor<AssignLhs>() {
     override fun visitAssignLhsVariable(ctx: WaccParser.AssignLhsVariableContext): AssignLhs {
-        val expr = ctx.expr()?.let { exprVisitor.visit(it) }
+        val expr = ctx.expr()?.let { ExprVisitor.visit(it) }
         val name = ctx.IDENT().text
         return AssignLhs.Variable(ctx.pos, expr, name)
     }
@@ -18,7 +14,7 @@ class AssignLhsVisitor : WaccParserBaseVisitor<AssignLhs>(), KoinComponent {
     override fun visitAssignLhsArrayElem(ctx: WaccParser.AssignLhsArrayElemContext?): AssignLhs {
         val arrayElemCtx = ctx?.arrayElem()
         val name = arrayElemCtx?.IDENT()?.text!!
-        val exprs = arrayElemCtx.expr()?.map(exprVisitor::visit)?.toTypedArray()!!
+        val exprs = arrayElemCtx.expr()?.map(ExprVisitor::visit)?.toTypedArray()!!
         return AssignLhs.ArrayElem(ctx.pos, name, exprs)
     }
 
@@ -28,22 +24,20 @@ class AssignLhsVisitor : WaccParserBaseVisitor<AssignLhs>(), KoinComponent {
     }
 }
 
-class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>(), KoinComponent {
-    private val exprVisitor: ExprVisitor by inject()
-
+object AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>() {
     override fun visitAssignRhsExpr(ctx: WaccParser.AssignRhsExprContext?): AssignRhs {
-        val expr = exprVisitor.visit(ctx?.expr())
+        val expr = ExprVisitor.visit(ctx?.expr())
         return AssignRhs.Expression(ctx!!.pos, expr)
     }
 
     override fun visitAssignRhsArrayLiter(ctx: WaccParser.AssignRhsArrayLiterContext?): AssignRhs {
-        val exprs = ctx?.arrayLiter()?.expr()?.map(exprVisitor::visit)?.toTypedArray()!!
+        val exprs = ctx?.arrayLiter()?.expr()?.map(ExprVisitor::visit)?.toTypedArray()!!
         return AssignRhs.ArrayLiteral(ctx.pos, exprs)
     }
 
     override fun visitAssignRhsNewpair(ctx: WaccParser.AssignRhsNewpairContext?): AssignRhs {
-        val expr1 = exprVisitor.visit(ctx?.expr(0))
-        val expr2 = exprVisitor.visit(ctx?.expr(1))
+        val expr1 = ExprVisitor.visit(ctx?.expr(0))
+        val expr2 = ExprVisitor.visit(ctx?.expr(1))
         return AssignRhs.Newpair(ctx!!.pos, expr1, expr2)
     }
 
@@ -53,9 +47,9 @@ class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>(), KoinComponent {
     }
 
     override fun visitAssignRhsCall(ctx: WaccParser.AssignRhsCallContext): AssignRhs {
-        val expr = ctx.expr()?.let { exprVisitor.visit(it) }
+        val expr = ctx.expr()?.let { ExprVisitor.visit(it) }
         val name = ctx.IDENT().text
-        val args = ctx.argList()?.expr()?.map(exprVisitor::visit)?.toTypedArray() ?: emptyArray()
+        val args = ctx.argList()?.expr()?.map(ExprVisitor::visit)?.toTypedArray() ?: emptyArray()
         return AssignRhs.Call(ctx.pos, expr, name, args)
     }
 }
@@ -63,6 +57,6 @@ class AssignRhsVisitor : WaccParserBaseVisitor<AssignRhs>(), KoinComponent {
 private val WaccParser.PairElemContext.pairElem: Pair<PairAccessor, Expr>
     get() {
         val accessor = if (acc.type == WaccParser.FST) PairAccessor.FST else PairAccessor.SND
-        val expr = ExprVisitor().visit(this.expr())
+        val expr = ExprVisitor.visit(this.expr())
         return accessor to expr
     }
