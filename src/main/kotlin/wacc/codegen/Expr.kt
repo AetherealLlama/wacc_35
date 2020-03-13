@@ -31,6 +31,7 @@ private fun Expr.Literal.StringLiteral.genCode(ctx: CodeGenContext, instrs: Muta
     instrs.add(Load(ctx.dst, Operand.Label(ctx.global.getStringLabel(value))))
 }
 
+@Suppress("unused")
 private fun Expr.Literal.PairLiteral.genCode(ctx: CodeGenContext, instrs: MutableList<Instruction>) {
     instrs.add(Move(ctx.dst, Imm(0)))
 }

@@ -33,7 +33,7 @@ class ProgramEndError(pos: FilePos) : SyntaxError("invalid syntax", pos) {
     override val msg = "any execution path through program must end with `exit`"
 }
 
-class IntTooBig(val number: Long, val pos: FilePos) : SyntaxError("numeric value too large", pos) {
+class IntTooBig(private val number: Long, val pos: FilePos) : SyntaxError("numeric value too large", pos) {
     override val msg: String
         get() = "the value $number is too large to be assigned"
 }
@@ -76,47 +76,47 @@ class ReturnOutsideFuncError(pos: FilePos) : SemanticError("return outside of fu
 
 abstract class TypeError(pos: FilePos) : SemanticError("type mismatch", pos)
 
-class TypeMismatch(val expected: Type, val actual: Type, pos: FilePos) : TypeError(pos) {
+class TypeMismatch(private val expected: Type, private val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "expected `$expected`, but got `$actual`"
 }
 
-class ReadTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
+class ReadTypeMismatch(private val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "attempted to read to a `$actual` type"
 }
 
-class ReturnTypeMismatch(val f: Func, val actual: Type, pos: FilePos) : TypeError(pos) {
+class ReturnTypeMismatch(private val f: Func, private val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "Attempted to return a `$actual` from `${f.name}()`, which has type `${f.type}`"
 }
 
-class ExitTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
+class ExitTypeMismatch(private val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "tried to exit with a `$actual` instead of an integer"
 }
 
-class InvalidPairElemType(val actual: Type, pos: FilePos) : TypeError(pos) {
+class InvalidPairElemType(private val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "values of type `$actual` cannot be put in a pair"
 }
 
-class FreeTypeMismatch(val actual: Type, pos: FilePos) : TypeError(pos) {
+class FreeTypeMismatch(private val actual: Type, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "cannot free a variable of type `$actual`"
 }
 
-class BinaryOpInvalidType(val t1: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
+class BinaryOpInvalidType(private val t1: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "`$func` received a `$t1`, but needs one of `[${func.argTypes.joinToString(", ")}]`"
 }
 
-class UnaryOpInvalidType(val actual: Type, val func: UnaryOperator, pos: FilePos) : TypeError(pos) {
+class UnaryOpInvalidType(private val actual: Type, val func: UnaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "`$func` needs a `$actual`, but needs a `${func.argType}`"
 }
 
-class BinaryArgsMismatch(val t1: Type, val t2: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
+class BinaryArgsMismatch(private val t1: Type, private val t2: Type, val func: BinaryOperator, pos: FilePos) : TypeError(pos) {
     override val msg: String
         get() = "arguments of `$func` were `$t1` and `$t2`, but they should be the same type"
 }

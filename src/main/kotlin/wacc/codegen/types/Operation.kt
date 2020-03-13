@@ -13,13 +13,6 @@ sealed class Operation {
         override fun toString(): String = "RSB"
     }
 
-    object MulOp : Operation() {
-        override fun toString(): String = "MUL"
-    }
-
-    data class DivOp(val signed: Boolean = true) : Operation()
-    data class ModOp(val signed: Boolean = true) : Operation()
-
     object AndOp : Operation() {
         override fun toString(): String {
             return "AND"
@@ -28,10 +21,6 @@ sealed class Operation {
 
     object OrOp : Operation() {
         override fun toString(): String = "ORR"
-    }
-
-    object XorOp : Operation() {
-        override fun toString(): String = "EOR"
     }
 
     object NegateOp : Operation()

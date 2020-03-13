@@ -5,7 +5,7 @@ import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
 
 // New ANTLR Error listener making use of the logger
-class SyntaxErrorListener() : BaseErrorListener() {
+class SyntaxErrorListener : BaseErrorListener() {
     override fun syntaxError(
         recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,

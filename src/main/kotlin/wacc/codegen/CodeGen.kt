@@ -143,7 +143,6 @@ fun Program.getAsm(): String {
         builder.appendln(".data")
     data.data.forEach { builder.appendln(it) }
     builder.appendln(".text")
-    builder.appendln(".global main")
     text.instructions.flatten().forEach { builder.appendln(it.asAsm) }
     return builder.toString()
 }
@@ -152,6 +151,8 @@ fun Program.getAsm(): String {
 
 private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
     val global = GlobalCodeGenData(this)
+
+    val globalLabel = listOf(listOf(Special.Global("main")))
 
     // Compile functions
     val classFuncsFutures = classes.flatMap { cls -> cls.funcs.map { f -> submit { f.genCode(global, cls = cls) } } }
@@ -183,7 +184,7 @@ private fun Program.genCode(): Pair<Section.DataSection, Section.TextSection> {
 
     // Collect all dependencies on built-in functions
     val usedBuiltinFuncs = global.usedBuiltins.flatMap { it.functionDeps }.toSet().map { it.function }
-    val fullCode = userFuncs + usedBuiltinFuncs
+    val fullCode = globalLabel + userFuncs + usedBuiltinFuncs
 
     return Section.DataSection(strings) to Section.TextSection(fullCode)
 }
