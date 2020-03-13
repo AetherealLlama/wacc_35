@@ -35,4 +35,8 @@ sealed class Operation {
     }
 
     object NegateOp : Operation()
+
+    object BitwiseAndOp : Operation() {
+        override fun toString(): String = "AND"
+    }
 }

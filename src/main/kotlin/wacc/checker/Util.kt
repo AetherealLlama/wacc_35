@@ -3,6 +3,7 @@ package wacc.checker
 import wacc.ast.BinaryOperator
 import wacc.ast.FilePos
 import wacc.ast.Type
+import wacc.ast.Type.BaseType.*
 import wacc.ast.UnaryOperator
 
 internal val ANY_PAIR = Type.PairType(Type.AnyType, Type.AnyType)
@@ -45,11 +46,12 @@ internal fun Type.checkArrayType(depth: Int, pos: FilePos): Pair<Type, Errors> {
 // <editor-fold desc="Operator Types">
 
 private val unaryOpTypes: Map<UnaryOperator, Pair<Type, Type>> = mapOf(
-        UnaryOperator.BANG to (Type.BaseType.TypeBool to Type.BaseType.TypeBool),
-        UnaryOperator.MINUS to (Type.BaseType.TypeInt to Type.BaseType.TypeInt),
-        UnaryOperator.LEN to (Type.ArrayType(Type.AnyType) to Type.BaseType.TypeInt),
-        UnaryOperator.ORD to (Type.BaseType.TypeChar to Type.BaseType.TypeInt),
-        UnaryOperator.CHR to (Type.BaseType.TypeInt to Type.BaseType.TypeChar)
+        UnaryOperator.BANG to (TypeBool to TypeBool),
+        UnaryOperator.MINUS to (TypeInt to TypeInt),
+        UnaryOperator.LEN to (Type.ArrayType(Type.AnyType) to TypeInt),
+        UnaryOperator.ORD to (TypeChar to TypeInt),
+        UnaryOperator.CHR to (TypeInt to TypeChar),
+        UnaryOperator.BNOT to (TypeInt to TypeInt)
 )
 
 internal val UnaryOperator.argType: Type
@@ -64,16 +66,21 @@ internal val BinaryOperator.argTypes: List<Type>
         BinaryOperator.DIV,
         BinaryOperator.MOD,
         BinaryOperator.ADD,
-        BinaryOperator.SUB -> listOf(Type.BaseType.TypeInt)
+        BinaryOperator.SUB,
+        BinaryOperator.BAND,
+        BinaryOperator.BOR,
+        BinaryOperator.BXOR,
+        BinaryOperator.BLEFT,
+        BinaryOperator.BRIGHT -> listOf(TypeInt)
         BinaryOperator.GT,
         BinaryOperator.GTE,
         BinaryOperator.LT,
-        BinaryOperator.LTE -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeChar)
+        BinaryOperator.LTE -> listOf(TypeInt, TypeChar)
         BinaryOperator.EQ,
-        BinaryOperator.NEQ -> listOf(Type.BaseType.TypeInt, Type.BaseType.TypeBool, Type.BaseType.TypeChar, Type.BaseType.TypeString,
+        BinaryOperator.NEQ -> listOf(TypeInt, TypeBool, TypeChar, Type.BaseType.TypeString,
                 Type.ArrayType(Type.AnyType), Type.PairType(Type.AnyType, Type.AnyType))
         BinaryOperator.LAND,
-        BinaryOperator.LOR -> listOf(Type.BaseType.TypeBool)
+        BinaryOperator.LOR -> listOf(TypeBool)
     }
 
 internal val BinaryOperator.returnType: Type
@@ -82,7 +89,12 @@ internal val BinaryOperator.returnType: Type
         BinaryOperator.DIV,
         BinaryOperator.MOD,
         BinaryOperator.ADD,
-        BinaryOperator.SUB -> Type.BaseType.TypeInt
+        BinaryOperator.SUB,
+        BinaryOperator.BAND,
+        BinaryOperator.BOR,
+        BinaryOperator.BXOR,
+        BinaryOperator.BLEFT,
+        BinaryOperator.BRIGHT -> TypeInt
         BinaryOperator.GT,
         BinaryOperator.GTE,
         BinaryOperator.LT,
@@ -90,7 +102,7 @@ internal val BinaryOperator.returnType: Type
         BinaryOperator.EQ,
         BinaryOperator.NEQ,
         BinaryOperator.LAND,
-        BinaryOperator.LOR -> Type.BaseType.TypeBool
+        BinaryOperator.LOR -> TypeBool
     }
 
 // </editor-fold>

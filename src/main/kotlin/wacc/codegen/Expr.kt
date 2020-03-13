@@ -63,6 +63,7 @@ private fun Expr.UnaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instru
         }
         LEN -> instrs.add(Load(ctx.dst, ctx.dst.op))
         ORD, CHR -> {} // Chars and ints should be represented the same way; ignore conversion
+        BNOT -> TODO()
     }
 }
 
@@ -120,6 +121,11 @@ private fun Expr.BinaryOp.genCode(ctx: CodeGenContext, instrs: MutableList<Instr
         NEQ -> regs.assignBool(NotEqual, instrs)
         LAND -> instrs.add(Op(AndOp, ctx.dst, regs.first, regs.second.op))
         LOR -> instrs.add(Op(OrOp, ctx.dst, regs.first, regs.second.op))
+        BAND -> instrs.add(Op(BitwiseAndOp, ctx.dst, regs.first, regs.second.op))
+        BOR -> TODO()
+        BXOR -> TODO()
+        BLEFT -> TODO()
+        BRIGHT -> TODO()
     }
 }
 

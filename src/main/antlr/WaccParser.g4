@@ -65,10 +65,15 @@ expr: integer                                             # Int
     | lit=(BOOLLITER | CHARLITER | STRLITER | PAIRLITER)  # Literal
     | IDENT                                               # IdExpr
     | arrayElem                                           # ArrayElemExpr
-    | op=(BANG | MINUS | LEN | ORD | CHR) expr            # UnaryOpExpr
+    | op=(BANG | MINUS | LEN | ORD | CHR | BNOT) expr     # UnaryOpExpr
     | expr op=(MUL | DIV | MOD) expr                      # BinaryOpExpr
     | expr op=(PLUS | MINUS) expr                         # BinaryOpExpr
-    | expr op=(GT | GTE | LT | LTE | EQ | NEQ) expr       # BinaryOpExpr
+    | expr op=(BLEFT | BRIGHT) expr                       # BinaryOpExpr
+    | expr op=(GT | GTE | LT | LTE) expr                  # BinaryOpExpr
+    | expr op=(EQ | NEQ) expr                             # BinaryOpExpr
+    | expr op=BAND expr                                   # BinaryOpExpr
+    | expr op=BXOR expr                                   # BinaryOpExpr
+    | expr op=BOR expr                                    # BinaryOpExpr
     | expr op=(LAND | LOR) expr                           # BinaryOpExpr
     | expr DOT IDENT                                      # ClassFieldExpr
     | NEWKW IDENT                                         # InstantiateExpr
